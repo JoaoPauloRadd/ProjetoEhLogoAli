@@ -1,0 +1,48 @@
+<resources>
+    <string name="app_name">ToAqui</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="action_settings2">Atualizar Mapa</string>
+    <string name="sat">Satélite</string>
+    <string name="normal">Normal</string>
+    <string name="title_activity_tutorial">TutorialActivity</string>
+    <string name="erro">Relatar erro</string>
+    <string name="tut">Tutorial</string>
+    <string name="sobre">Sobre</string>
+    <string name="maisInfo">&lt;&lt;Site&gt;&gt;</string>
+    <string name="checar">Atualizar Mapas</string>
+
+    <string name="title_section1">Section 1</string>
+    <string name="title_section2">Section 2</string>
+    <string name="title_section3">Section 3</string>
+    <string name="title_activity_mail">MailActivity</string>
+    <string name="title_activity_send_local">Cadastrar Local</string>
+    <string name="title_activity_google_play_services">GooglePlayServicesActivity</string>
+
+
+    <string name="signed_in_fmt">Logando como: %s</string>
+    <string name="signing_in">Entrando…</string>
+    <string name="signed_out">Deslogado</string>
+    <string name="signed_in_err">"Erro ao pegar nome."</string>
+    <string name="error_null_person">
+        Error: Plus.PeopleApi.getCurrentPerson returned null. Ensure that the Google+ API is
+        enabled for your project, you have a properly configured google-services.json file
+        and that your device has an internet connection.
+    </string>
+
+    <!-- Google Play Services error for Toast -->
+    <string name="play_services_error_fmt">Erro do Google Play Services: %i</string>
+
+    <!-- Button labels -->
+    <string name="sign_out">Sair</string>
+    <string name="disconnect">Desconectar</string>
+
+    <!-- Content Description for images -->
+    <string name="desc_google_icon">Google Logo</string>
+
+    <string name="title_text">Login Google\nInício Rápido</string>
+
+</resources>
+
