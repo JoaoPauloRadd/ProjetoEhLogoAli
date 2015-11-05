@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="2dp">
+
+    <ImageView
+        android:id="@+id/lblImageHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="3dp"
+        android:paddingBottom="3dp"
+        android:paddingTop="3dp"
+        />
+    <TableLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:padding="3dp">
+        <TableRow>
+        <TextView
+            android:id="@+id/lblListHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/wallet_bright_foreground_holo_light"
+            android:textSize="16sp"/></TableRow>
+        <TableRow>
+        <TextView
+            android:id="@+id/lblButtonHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/wallet_bright_foreground_holo_light"
+            android:textSize="10sp"
+            android:background="#FFFFFF"
+            android:shadowColor="#FFFFFF"
+            android:text="@string/maisInfo"
+            android:linksClickable="true"
+            android:onClick="actionButton"
+            android:autoLink="web"
+            android:clickable="true"
+            android:textColorLink="@color/common_signin_btn_default_background"/></TableRow>
+    </TableLayout>
+
+</LinearLayout>

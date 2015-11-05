@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array
+        name="string_array_help">
+        <item>"Como obter mapas?"</item>
+        <item>"Como escolho um mapa?"</item>
+        <item>"Como vejo os locais?"</item>
+    </string-array>
+
+</resources>
