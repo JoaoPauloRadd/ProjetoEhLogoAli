@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">EhLogoAli</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="title_activity_main">EhLogoAli</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Selecionar Mapa</string>
+    <string name="action_settings2">Atualizar Mapa</string>
+    <string name="sat">Satélite</string>
+    <string name="normal">Normal</string>
+    <string name="title_activity_tutorial">TutorialActivity</string>
+    <string name="erro">Relatar erro</string>
+    <string name="tut">Tutorial</string>
+    <string name="sobre">Sobre</string>
+    <string name="maisInfo">&lt;&lt;Site&gt;&gt;</string>
+    <string name="checar">Atualizar Mapas</string>
+    <string name="cidade">Escolher Cidade</string>
+
+
+    <string name="title_section1">Section 1</string>
+    <string name="title_section2">Section 2</string>
+    <string name="title_section3">Section 3</string>
+    <string name="title_activity_mail">MailActivity</string>
+</resources>
