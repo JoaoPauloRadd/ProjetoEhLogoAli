@@ -5,7 +5,7 @@ android {
         config {
             keyAlias 'ToAquiKey'
             keyPassword 'ToAqui113'
-            storeFile file('C:/Users/João Paulo Radd/workspace/Apps Projeto/toaqui/androidTA.jks')
+            storeFile file('C:/Users/USER/.android/androidTA.jks')
             storePassword 'ToAqui113'
         }
     }
@@ -22,7 +22,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.config
         }
         debug {
             signingConfig signingConfigs.config

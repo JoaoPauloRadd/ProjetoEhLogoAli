@@ -606,10 +606,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
-    @Override
-    public void onBackPressed() {
-    }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
