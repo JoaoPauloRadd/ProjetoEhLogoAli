@@ -20,7 +20,7 @@ public class Usuarios {
     }
 
     public void setemail(String nome) {
-        this.email = email;
+        this.email = nome;
     }
     /*
     @Override

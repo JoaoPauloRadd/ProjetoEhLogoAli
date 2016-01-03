@@ -65,7 +65,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
     static boolean ableToContinue = false;
     static TextView textArea;
     List<Usuarios> users;
-    static String mail;
+    static String mail = null;
     /////////////////////////////////////////////////////////////
 
 
@@ -90,6 +90,8 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
     /* Should we automatically resolve ConnectionResults when possible? */
     private boolean mShouldResolve = false;
 
+    public static PerfilData perfil;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,6 +99,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
 
         users = new ArrayList<Usuarios>();
 
+        perfil = new PerfilData();
 
         if (verificaConexao()){
             verificaLogins(true);
@@ -116,7 +119,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
                 AlertDialog dialog = builder.create();
                 dialog.show();
             }else{
-                Toast.makeText(this, "Verifique a conexão!\nErros podem ocorrer!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Verifique sua conexão!\nNecessário para uso", Toast.LENGTH_LONG).show();
             }
         }
 
@@ -162,6 +165,9 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
                 Person currentPerson = Plus.PeopleApi.getCurrentPerson(mGoogleApiClient);
 
                 mail = Plus.AccountApi.getAccountName(mGoogleApiClient);
+
+                perfil.setEmail(mail);
+
                 if (currentPerson != null) {
                     String name = currentPerson.getDisplayName();
                     mStatus.setText(getString(R.string.signed_in_fmt, name));
@@ -181,6 +187,20 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
             findViewById(R.id.sign_in_button).setEnabled(true);
             findViewById(R.id.sign_in_button).setVisibility(View.VISIBLE);
             findViewById(R.id.sign_out_and_disconnect).setVisibility(View.GONE);
+            if(!verificaConexao()){
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setMessage("Para a primeira vez que a aplicação é aberta, o uso de internet é necessário.\n Conecte a internet e reabra a aplicação")
+                        .setTitle("Sem Conexão");
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User clicked OK button
+                        finish();
+                    }
+                });
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
         }
     }
 
@@ -236,7 +256,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
         updateUI(true);
 
 
-        if(isUser()) {
+        if(isUser(0)) {
             Toast.makeText(this, "Conectado", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(this, MainActivity.class);
             startActivity(intent);
@@ -245,11 +265,18 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
 
     public void noPermissionMessage(){
         AlertDialog.Builder builder = new AlertDialog.Builder(GooglePlayServicesActivity.this);
-        builder.setMessage("Para uso do ToAqui, é necessário ser usuário com permissões " +
-                "dentro do sistema. Se você acha que isso é um erro e foi informado " +
-                "que pode usá-lo, entre em contato com os administradores. " +
-                "Email utilizado: "+mail)
-                .setTitle("Sem Permissões");
+        if(users.isEmpty()) {
+            builder.setMessage("Para a primeira vez que a aplicação é aberta, " +
+                    "a conexão com o servidor é necessária.\n Desculpe-nos o trantorno " +
+                    "e reabra a aplicação mais tarde")
+                    .setTitle("Servidor OFF");
+        }else {
+            builder.setMessage("Para uso do ToAqui, é necessário ser usuário com permissões " +
+                    "dentro do sistema. Se você acha que isso é um erro e foi informado " +
+                    "que pode usá-lo, entre em contato com os administradores. " +
+                    "Email utilizado: " + mail)
+                    .setTitle("Sem Permissões");
+        }
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 // User clicked OK button
@@ -261,23 +288,29 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
         dialog.show();
     }
 
-    public boolean isUser(){
+    public boolean isUser(int loop){
 
-        int antiLoop = 0;
-        while(!ableToContinue){
-            //antiLoop = antiLoop + 1;
-
-        }
-        if(ableToContinue){
+        String mail1 = mail;
+        String mail2;
+        if(mail != null && !(users.isEmpty())){
             for(Usuarios user:users){
-                if(mail.equals(user.getEmail()))return true;
+                if(user.getEmail().toString().equals(null)){
+                    //pula se não buga
+                }else {
+                    mail2 = user.getEmail().toString();
+                    if (mail1.equals(mail2)) {
+                        mail = mail2+"ok";
+                        return true;
+                    }
+                }
 
             }
             return false;
-        }
-
-        return false;
-
+        }else if(loop < 40){
+            loop++;
+            loadAllPrefs();
+            return isUser(loop);
+        } else return false;
     }
 
 
@@ -561,11 +594,11 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
             mWakeLock.release();
 //	      mProgressDialog.dismiss();
             if (result != null){ //aviso caso tenha ocorrido um erro
-                Toast.makeText(context,"Erro de Download", Toast.LENGTH_LONG).show();
+                Toast.makeText(context,"Erro de Consulta", Toast.LENGTH_LONG).show();
                 statusUpdate = "Checar Atualizações";
             }
             else{//aviso q ocorreu tudo certo
-                Toast.makeText(context,"Usuarios baixados - DELETE ESSE TOAST", Toast.LENGTH_SHORT).show();
+
 
                 //informa q est? atualizado
 
@@ -588,6 +621,8 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
 
                 users = RssParserHelper.parseUsuarios(is);
 
+                if (users.isEmpty()) loadAllPrefs();
+
                 if (users.isEmpty()) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(GooglePlayServicesActivity.this);
                     builder.setMessage("Para a primeira vez que a aplicação é aberta, " +
@@ -608,15 +643,14 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
                     for (Usuarios u:users) {
                         savePrefs(u, datapadrao);
                     }
+                    ableToContinue = true;
 
 
-
-                    Toast.makeText(getApplicationContext(), "Users Carregadas - DELETE ESSE TOAST", Toast.LENGTH_LONG).show();
                     //}
                 }
             }
             statusUpdate = "Checar Atualizações";
-            ableToContinue = true;
+
         }
 
     }
@@ -642,7 +676,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
             String aux = versoes.getString(users.get(i).getEmail(),datapadrao);
             savePrefs(users.get(i),aux);
         }
-        //ableToContinue = true;
+        ableToContinue = true;
     }
     /*Jo?o-10/09-Salva a escolha de mapa do usu?rio, deve ser chamado no bot?o de salvar as configura??es*/
 
@@ -686,4 +720,13 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
             dt.execute(url + urlArea);
         }else Toast.makeText(this, "Você esta sem conexão no momento!", Toast.LENGTH_SHORT).show();
     }
+
+    public static PerfilData getPerfil(){
+        return perfil;
+    }
+
+    public static void setPerfil(PerfilData perfilNovo){
+        perfil = perfilNovo;
+    }
+
 }

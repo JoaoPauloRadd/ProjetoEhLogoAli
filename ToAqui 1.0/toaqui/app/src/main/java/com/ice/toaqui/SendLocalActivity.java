@@ -52,7 +52,7 @@ public class SendLocalActivity extends AppCompatActivity {
 
     static List<String> mapas;
     private static String url = "http://ehlogoali.eduardobarrere.com/consulta/";
-    private static String urlArea = "xml.php";
+    private static String urlArea = "xml6.php";
     String datapadrao = "26-10-1989";
     List<Area> areas;
     List<String> ultimosupdates;
@@ -76,6 +76,7 @@ public class SendLocalActivity extends AppCompatActivity {
     private static String url_create_product = "http://ehlogoali.eduardobarrere.com/joao";
     Double lat;
     Double lng;
+    public static PerfilData perfil;
 
 
     @Override
@@ -1085,6 +1086,14 @@ public class SendLocalActivity extends AppCompatActivity {
             //finish();
         }
 
+    }
+
+    public static PerfilData getPerfil(){
+        return perfil;
+    }
+
+    public static void setPerfil(PerfilData perfilNovo){
+        perfil = perfilNovo;
     }
 
 }
