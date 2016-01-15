@@ -90,6 +90,8 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
     /* Should we automatically resolve ConnectionResults when possible? */
     private boolean mShouldResolve = false;
 
+    public static PerfilData perfil;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,6 +99,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
 
         users = new ArrayList<Usuarios>();
 
+        perfil = new PerfilData();
 
         if (verificaConexao()){
             verificaLogins(true);
@@ -162,6 +165,8 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
                 Person currentPerson = Plus.PeopleApi.getCurrentPerson(mGoogleApiClient);
 
                 mail = Plus.AccountApi.getAccountName(mGoogleApiClient);
+
+                perfil.setEmail(mail);
 
                 if (currentPerson != null) {
                     String name = currentPerson.getDisplayName();
@@ -715,4 +720,13 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
             dt.execute(url + urlArea);
         }else Toast.makeText(this, "Você esta sem conexão no momento!", Toast.LENGTH_SHORT).show();
     }
+
+    public static PerfilData getPerfil(){
+        return perfil;
+    }
+
+    public static void setPerfil(PerfilData perfilNovo){
+        perfil = perfilNovo;
+    }
+
 }

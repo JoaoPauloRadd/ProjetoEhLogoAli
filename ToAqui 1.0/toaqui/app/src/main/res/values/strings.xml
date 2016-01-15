@@ -2,7 +2,7 @@
     <string name="app_name">ToAqui</string>
 
     <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">Selecionar Mapa</string>
     <string name="title_activity_maps">Map</string>
     <string name="action_settings2">Atualizar Mapa</string>
     <string name="sat">Satélite</string>
@@ -20,6 +20,7 @@
     <string name="title_activity_mail">MailActivity</string>
     <string name="title_activity_send_local">Cadastrar Local</string>
     <string name="title_activity_google_play_services">GooglePlayServicesActivity</string>
+    <string name="cidade">Escolher Cidade</string>
 
 
     <string name="signed_in_fmt">Logando como: %s</string>

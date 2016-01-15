@@ -25,8 +25,6 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 
 
-
-
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.internal.widget.ActionBarOverlayLayout;
@@ -56,6 +54,7 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.ice.toaqui.pojo.Area;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -86,6 +85,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.xml.sax.InputSource;
+import com.ice.toaqui.pojo.Cidade;
+import com.ice.toaqui.pojo.Local;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,GoogleMap.OnMarkerClickListener {
 
@@ -104,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     ////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////
-
+    List<Area> areas;
     static boolean ableToContinue = false;
     static boolean firstClick = false;
     static boolean mapasWasEmpty = false;
@@ -121,15 +122,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public static String mapaescolhido2;
     public static String code = "0";
 
+    List<Cidade> cidades;
+    public static ArrayList<String> mapasDaCidade;
+    static List<String> cities;
     //public static String areaescolhida;
+    public static PerfilData perfil;
 
 
     //Atributos no uso dos dados de prefer�ncias (loadAllPrefs, mapPrefs, etc)
     public static final String VERSION_PREFS = "VersionsFile";
     public static final String MAPA_PREF = "MapaEscolhido";
+    public static final String CITY_PREF = "CidadeEscolhida";
+    public static final String ALL_CITY_PREFS = "CidadesExistentes";
 
     /*Variaveis da classe -  duas estruturas entram na cria��o de menu de locais*/
-    //List<Local> locais;
+    List<Local> locais;
     List<String> nomesLocais;
     /* e uma para �reas*/
     //List<Area> areas;
@@ -143,20 +150,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     String urlToUpdate;
 
     //URL REPRESENTA O CAMINHO DO SERVIDOR, � AQUI QUE O ip SER� ALTERADO QUANDO O SERVIDOR LOCAL ESTIVER FUNCIONANDO
-    private static String url = "http://200.131.55.228:8080/elogoali/api/";
-    private static String localHost = "http://200.131.55.228/elogoali/api/";
-    private static String urlArea = "area/buscarTodos/";
-    private static String urlLocal = "local/buscarTodos/";
+    private static String url = "http://ehlogoali.eduardobarrere.com/consulta/";
+    private static String urlArea = "xml.php";
+    private static String urlLocal = "xml3.php?go=";
     //ESTA � A DATA PADR�O QUE � ATRIBUIDA A UM MAPA CASO ELE AINDA N�O TENHA SIDO CHECADO NO SERVIDOR POR ATUALIZA��ES
     String datapadrao = "26-10-1989";
     private static String linkMarker = "http://www.ufjf.br/portal/";
     private static int sizeLoop = 0;
     private static LatLng latLng;
-    private static LatLng lLDiferenca = new LatLng(0,0);
-    private static double latDif =0;
-    private static double lngDif =0;
+    private static String nomeLocal;
+    private static String linkLocal;
+    private static LatLng lLDiferenca = new LatLng(0, 0);
+    private static double latDif = 0;
+    private static double lngDif = 0;
     private static boolean first = true;
 
+    private static String cidadeAtual;
 
 
     ////////////////////////////////////////////////////////////////////
@@ -177,15 +186,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapas = new ArrayList<String>();
         ultimosupdates = new ArrayList<String>();
         statusUpdate = "Checar Atualizações";
-        //locais = new ArrayList<Local>();
+        locais = new ArrayList<Local>();
         nomesLocais = new ArrayList<String>();
+        perfil = GooglePlayServicesActivity.getPerfil();
+        mapasDaCidade = new ArrayList<String>();
+        cities = new ArrayList<String>();
 
         //Carrega e salva preferencias
-        //loadAllPrefs();
-        //loadMapaPref();
+        loadAllPrefs();
+        loadMapaPref();
+        loadCityPref();
+        loadAllCityPrefs();
         boolean conexao = verificaConexao();
         boolean atualiza = true;
-        if(!(conexao)){
+        if (!(conexao)) {
             //gera��o do dialog para avisar a ausencia de conex�o
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage("Para o usu da aplicação, o uso de internet é necessário.\n Conecte a internet e reabra a aplicação")
@@ -199,42 +213,55 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             AlertDialog dialog = builder.create();
             dialog.show();
-        }
-        else{
+        } else {
 //			carregamento dos dados e atualiza��o e exibi��o do tutorial
-            /**
-             if(mapas.isEmpty()){
-             showTutorial(0);
-             }else{
-             //aqui ele atualiza ou carrega as áreas existentes
-             verificaAreas(true);
-             atualiza = false;
-             }
-             //SendHttpRequestTask t = new SendHttpRequestTask();
-             //String[] params = new String[]{url+urlArea, null, null};
-             //t.execute(params);
-             ehArea = true;
-             */
+
+            if (mapas.isEmpty()) {
+                //showTutorial(0);
+            } else {
+                //aqui ele atualiza ou carrega as áreas existentes
+                verificaAreas(true);
+                atualiza = false;
+            }
+            //SendHttpRequestTask t = new SendHttpRequestTask();
+            //String[] params = new String[]{url+urlArea, null, null};
+            //t.execute(params);
+            ehArea = true;
+
         }
 
 
         //aqui ele vai baixar as áreas caso seja o primeiro acesso
-        /*
-        if(atualiza)
-        {
+
+        if (atualiza) {
             verificaAreas(false);
 
             ehArea = true;
         }
         msgLocais = true;
-*/
 
+        perfil.restartMapas(mapas);
+        //perfil.upload();
+        mProgressDialog = new ProgressDialog(MainActivity.this);
+        mProgressDialog.setMessage("Carregando...");
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        mProgressDialog.setCancelable(true);
+    }
+
+    public void verificaAreas(boolean teste) {
+        if (!teste) {
+            teste = verificaConexao();
+        }
+        if (teste) {
+            final DownloadTask2 dt = new DownloadTask2(MainActivity.this);
+            dt.execute(url + urlArea);
+        } else Toast.makeText(this, "Você esta sem conexão no momento!", Toast.LENGTH_SHORT).show();
     }
 
 
     //tutorial
-    public void showTutorial(int i)
-    {
+    public void showTutorial(int i) {
         LayoutInflater factory = LayoutInflater.from(this);
         final View view;
 
@@ -252,13 +279,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-        switch(i){
+        switch (i) {
             case 0:
                 //geração do dialog para o sobre
 
                 view = factory.inflate(R.layout.image, null);
                 image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
+                text = (TextView) view.findViewById(R.id.textView);
 
                 image.setImageResource(R.drawable.tutorial);
 
@@ -291,8 +318,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 //geração do dialog para o sobre
                 view = factory.inflate(R.layout.image, null);
                 image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
-
+                text = (TextView) view.findViewById(R.id.textView);
 
 
                 image.setImageResource(R.drawable.menu);
@@ -331,8 +357,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 //geração do dialog para o sobre
                 view = factory.inflate(R.layout.image, null);
                 image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
-
+                text = (TextView) view.findViewById(R.id.textView);
 
 
                 image.setImageResource(R.drawable.gps);
@@ -372,10 +397,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 image = (ImageView) view.findViewById(R.id.imageView);
                 image2 = (ImageView) view.findViewById(R.id.imageView2);
 
-                text= (TextView) view.findViewById(R.id.textView);
-                text2= (TextView) view.findViewById(R.id.textView2);
-                text3= (TextView) view.findViewById(R.id.textView3);
-
+                text = (TextView) view.findViewById(R.id.textView);
+                text2 = (TextView) view.findViewById(R.id.textView2);
+                text3 = (TextView) view.findViewById(R.id.textView3);
 
 
                 image.setImageResource(R.drawable.tut3);
@@ -418,10 +442,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 image = (ImageView) view.findViewById(R.id.imageView);
                 image2 = (ImageView) view.findViewById(R.id.imageView2);
 
-                text= (TextView) view.findViewById(R.id.textView);
-                text2= (TextView) view.findViewById(R.id.textView2);
-                text3= (TextView) view.findViewById(R.id.textView3);
-
+                text = (TextView) view.findViewById(R.id.textView);
+                text2 = (TextView) view.findViewById(R.id.textView2);
+                text3 = (TextView) view.findViewById(R.id.textView3);
 
 
                 //image.setImageResource(R.drawable.opt);
@@ -465,10 +488,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 image = (ImageView) view.findViewById(R.id.imageView);
                 image2 = (ImageView) view.findViewById(R.id.imageView2);
 
-                text= (TextView) view.findViewById(R.id.textView);
-                text2= (TextView) view.findViewById(R.id.textView2);
-                text3= (TextView) view.findViewById(R.id.textView3);
-
+                text = (TextView) view.findViewById(R.id.textView);
+                text2 = (TextView) view.findViewById(R.id.textView2);
+                text3 = (TextView) view.findViewById(R.id.textView3);
 
 
                 image.setImageResource(R.drawable.tut5);
@@ -479,7 +501,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 text3.setText("Clicando nele, você será redirecionado ao Google Maps App e será requisitado" +
                         " a permissão para o uso de GPS para se construir a rota de onde você está até o local." +
                         " A outra opção ao lado redireciona você para o Google Maps App.");
-
 
 
                 title = "Tutorial - Informações e Rota";
@@ -513,8 +534,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 //geração do dialog para o sobre
                 view = factory.inflate(R.layout.image, null);
                 image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
-
+                text = (TextView) view.findViewById(R.id.textView);
 
 
                 //image.setImageResource(R.drawable.tut2);
@@ -552,7 +572,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             case 7:
                 view = factory.inflate(R.layout.image, null);
                 image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
+                text = (TextView) view.findViewById(R.id.textView);
 
                 image.setImageResource(R.drawable.tutorial);
 
@@ -621,12 +641,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
 
-        //MenuItem menu3 = menu.findItem(R.id.menu3);
-        //menu3.setTitleCondensed();
-/*
-
         MenuItem menu2 = menu.findItem(R.id.menu2);
-        if(menu2 != null) {
+        if (menu2 != null) {
             SubMenu subMenu2 = menu2.getSubMenu();
 
             File f;
@@ -651,16 +667,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 subMenu2.add(l.getNome());
                 nomesLocais.add(l.getNome());
             }
-
-            if(!(locais.isEmpty()) && msgLocais)
-            {
-                Toast.makeText(this,"Locais carregados", Toast.LENGTH_SHORT).show();
+            boolean internet = verificaConexao();
+            if (!(locais.isEmpty()) && msgLocais) {
+                Toast.makeText(this, "Locais carregados", Toast.LENGTH_SHORT).show();
                 msgLocais = false;
                 menu2.setEnabled(true);
-                estaCarregandoLocais=false;
-            }else if(locais.isEmpty()) menu2.setEnabled(false);
-            if(estaCarregandoLocais) {
-                if (sizeLoop > 10 && verificaConexao()) {
+                estaCarregandoLocais = false;
+            } else if (locais.isEmpty()) menu2.setEnabled(false);
+            if (estaCarregandoLocais) {
+                if (sizeLoop < 10 && internet) {
                     sizeLoop = sizeLoop + 1;
                     onPrepareOptionsMenu(menu);
                 } else {
@@ -668,25 +683,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     sizeLoop = 0;
                 }
             }
-        }*/
-        super.onPrepareOptionsMenu(menu);
+        }
         return true;
     }
 
     //fun��o que pega arquivo dentro das pastas do app
-    public File getFileINTERNAL()
-    {
+    public File getFileINTERNAL() {
 
         this.setTitle(mapaescolhido);
-        File f = new File(this.getFilesDir(), mapaescolhido+".xml");
+        File f = new File(this.getFilesDir(), mapaescolhido + ".xml");
         //Environment.getDataDirectory();
         return f;
     }
-    //fun��o que pega arquivo dentro do cart�o (n�o est� sendo musada - 03/11/14
-    public File getFileEXTERNAL()
-    {
 
-        File f = new File(Environment.getExternalStorageDirectory().getPath()+"/"+mapaescolhido2+".xml");
+    //fun��o que pega arquivo dentro do cart�o (n�o est� sendo musada - 03/11/14
+    public File getFileEXTERNAL() {
+
+        File f = new File(Environment.getExternalStorageDirectory().getPath() + "/" + mapaescolhido2 + ".xml");
         return f;
     }
 
@@ -696,7 +709,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        Toast.makeText(this,item.getTitle(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, item.getTitle(), Toast.LENGTH_SHORT).show();
         switch (id) {
             case R.id.menu1:
                 //gera��o do dialog para o sobre
@@ -724,12 +737,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 AlertDialog dialog = builder.create();
                 dialog.show();
                 return true;
+            case R.id.menu2:
+                subItemMenu = true;
+                if (locais.isEmpty()) {
+                    Toast.makeText(this, "Espere ou escolha um mapa primeiro", Toast.LENGTH_SHORT).show();
+                    msgLocais = true;
+                    invalidateOptionsMenu();
+                }
+
+
+                return true;
 
 
             case R.id.menu3:
-                if(TYPE_MAP == GoogleMap.MAP_TYPE_NORMAL){
+                if (TYPE_MAP == GoogleMap.MAP_TYPE_NORMAL) {
                     TYPE_MAP = GoogleMap.MAP_TYPE_SATELLITE;
-                }else{
+                } else {
                     TYPE_MAP = GoogleMap.MAP_TYPE_NORMAL;
                 }
                 map.setMapType(TYPE_MAP);
@@ -737,13 +760,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return true;
 
 
+            case R.id.action_settings:
+                escolhaMapa();
 
-
+                return true;
 
             //case R.id.action_settings2:
             //    downloadMapa();
             //    return true;
 
+            case R.id.action_settings3:
+                verificaAreas(false);
+                return true;
+
+            case R.id.action_settings4:
+                descobrirCidade();
+                return true;
+
+            //case R.id.action_settings2:
+            //    downloadMapa();
+            //    return true;
 
 
             case R.id.menu5:
@@ -751,11 +787,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return true;
 
             case R.id.menu6:
-                mail("Feedback de erro no EhLogoAli");
+                mail("Feedback de erro no ToAquii");
+                return true;
+
+            case R.id.submenu1:
                 return true;
 
             default:
-
+                if(subItemMenu){
+                    int i = nomesLocais.indexOf(item.getTitle());
+                    if(i>=0) {
+                        Local local = locais.get(i);
+                        plotaNoMap(local);
+                    }
+                    subItemMenu = false;
+                }
+                else{
+                    String nomeMapa = (String) item.getTitle();
+                    selfDestruct2(nomeMapa);
+                    //selfDestruct2
+                }
 
 
                 return super.onOptionsItemSelected(item);
@@ -766,29 +817,193 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         //Intent intent = new Intent(this, MailActivity.class);
         Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND);
         emailIntent.setType("plain/text");
-        String aEmailList[] = { "eduardo.barrere@ice.ufjf.br"};
+        String aEmailList[] = {"eduardo.barrere@ice.ufjf.br"};
         emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL, aEmailList);
-        if(s.equals("Contato")){
+        if (s.equals("Contato")) {
             emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "App EhLogoAli: ");
-        }else emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, s);
+        } else emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, s);
 
         emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, "<Escreva aqui sua mensagem>");
         try {
             startActivity(Intent.createChooser(emailIntent, "Envie seu email pelo:"));
-        }catch (android.content.ActivityNotFoundException ex){
-            Toast.makeText(this,"Não existe nenhum app para enviar emails\n" +
+        } catch (android.content.ActivityNotFoundException ex) {
+            Toast.makeText(this, "Não existe nenhum app para enviar emails\n" +
                     " no seu dispositivo.", Toast.LENGTH_LONG).show();
         }
     }
 
+    public void escolhaMapa() {
+        if (cidadeAtual == null) {
+            descobrirCidade();
+        } else {
+            escolhaArea();
+        }
+    }
+
+    public void escolhaArea() {
+
+        if (mapasDaCidade.isEmpty()) {
+            for (Area area : areas) {
+                if (area.getCidade().equals(cidadeAtual))
+                    mapasDaCidade.add(area.getNome());
+            }
+        }
+        if (!mapasDaCidade.isEmpty()) {
+            CharSequence[] opt = mapasDaCidade.toArray(new CharSequence[mapas.size()]);
 
 
-    public static LatLng getLatLng(){
+            AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
+            builder2
+                    .setTitle("Mapas")
+                    .setIcon(R.drawable.map)
+                    .setItems(opt, new DialogInterface.OnClickListener() {
+
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // TODO Auto-generated method stub
+                            //which eh o elemento selecionado
+                            String s = mapasDaCidade.get(which).toString();
+                            if (verificaConexao()) {
+                                selfUpdate2(s, which);
+                            } else
+                                Toast.makeText(getApplicationContext(), "Você esta sem conexão no momento!\n Ative a internet para baixar / atualizar locais", Toast.LENGTH_SHORT).show();
+
+
+                            msgLocais = true;
+                            selfDestruct2(s);
+                        }
+                    });
+
+            AlertDialog dialog2 = builder2.create();
+            dialog2.show();
+        } else {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Essa cidade selecionada, não contém mapas. Clique em Atualizar mapas para mais opções ou selecione" +
+                    " outra cidade")
+                    .setTitle("Sem Mapas")
+                    .setIcon(R.drawable.erro);
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+
+                }
+            });
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
+    }
+
+    public void descobrirCidade() {
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+
+        alert.setTitle("Cidade de interesse");
+        alert.setMessage("Escolha sua cidade:");
+
+        CharSequence[] opt = cities.toArray(new CharSequence[cities.size()]);
+        AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
+        builder2
+                .setTitle("Escolha sua cidade padrão")
+                .setIcon(R.drawable.up)
+                .setItems(opt, new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // TODO Auto-generated method stub
+                        //which eh o elemento selecionado
+                        cidadeAtual = cities.get(which).toString();
+                        saveCityPref("CidadeEscolhida", cidadeAtual);
+                        mapasDaCidade.clear();
+                        for (Area area : areas) {
+                            if (area.getCidade().equals(cidadeAtual))
+                                mapasDaCidade.add(area.getNome());
+                        }
+                        escolhaArea();
+                    }
+                });
+
+        AlertDialog dialog2 = builder2.create();
+        dialog2.show();
+    }
+
+    public void selfUpdate2(String selecionado, int posicao) {
+
+        //se foi clicado como checar... ele vai checar atualiza��es
+        if (statusUpdate == "Checar Atualizações") {
+            statusUpdate = "Checando...";
+            //Toast.makeText(get, statusUpdate, Toast.LENGTH_SHORT).show();
+            String nome = null;
+            String ultimoupdate = null;
+            if (!mapas.isEmpty()) {/*CASO O mapas N�O ESTEJA VAZIO, PRECISAMOS PEGAR A ESCOLHA
+			DO USU�RIO DO SPINNER E A DATA DO ULTIMOUPDATE PARA CONFERIR NO SERVIDOR A NECESSIDADE
+			OU N�O DE ATUALIZAR O MAPA;*/
+
+                if (selecionado == null) {
+                    //caso as op��es n�o tenham sido carregadas e n�o h� nada selecionado para atualizar
+                    Toast.makeText(this, "Nenhuma opção selecionada!\nEspere a aplicação carregar.", Toast.LENGTH_SHORT).show();
+                } else {
+                    //registra e guarda o q est� sendo atualizado
+                    nome = selecionado;
+                    mapaescolhido2 = selecionado;
+                    Log.v("nome do mapa", selecionado);
+                    int aux = posicao;
+                    ultimoupdate = ultimosupdates.get(aux);
+                }
+            }
+			/*SE O mapas FOR VAZIO, � PORQUE O USUARIO EST� ABRINDO A APLICA��O PELA
+			*PRIMEIRA VEZ E AINDA N�O FEZ NENHUMA REQUISI��O AO SERVIDOR;
+			ASSIM ELE FAZ A REQUISI��O COM AS VARI�VEIS COM VALOR NULL POIS RETORNAR� A LISTA DE AREAS;
+			*/
+            code = "1";
+            for (Area area : areas) {
+                ultimosupdates.add(datapadrao);
+                savePrefs(area.getNome(), datapadrao);
+                if (area.getNome().equals(mapaescolhido2))
+                    code = "" + area.getIdarea();
+            }
+            //carregamento dos dados e atualiza��o
+            ehArea = true;
+            //SendHttpRequestTask t = new SendHttpRequestTask();//ENVIA AO SERVIDOR UMA REQUISI��O ASYNCTASK, OU SEJA, EM PARALELO PARA N�O TRAVAR A APLICA��O;
+            //String[] params = new String[]{url+urlArea/*+codigo da �rea*/, nome, ultimoupdate};
+            //t.execute(params);
+            //final DownloadTask2 dt = new DownloadTask2(MainActivity.this);
+            //dt.execute(url+urlArea);
+            completeUpdate();
+        }
+
+
+    }
+
+    public void completeUpdate() {
+        //caso seja clicado o bot�o de atualizar
+
+        if (verificaConexao()) {
+            final DownloadTask dt = new DownloadTask(MainActivity.this);
+            dt.execute(url + urlLocal + code);
+            mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                @Override
+                public void onCancel(DialogInterface dialog) {
+                    dt.cancel(true);
+                }
+            });
+        } else {
+            Toast.makeText(this, "Você esta sem conexão no momento!\n Ative a internet para baixar / atualizar locais", Toast.LENGTH_SHORT).show();
+            statusUpdate = "Checar Atualizações";
+        }
+    }
+
+
+    public static LatLng getLatLng() {
         return latLng;
     }
 
 
+    public static String getNomeLocal() {
+        return nomeLocal;
+    }
 
+    public static String getLinkLocal() {
+        return linkLocal;
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -804,10 +1019,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .build();
 
         //plota o marker
-
+        linkLocal = null;
         markerOptions = new MarkerOptions();
         markerOptions.position(latLng);
-        markerOptions.title("UFJF");
+
 
 
         //markerOptions.snippet();
@@ -815,7 +1030,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
         //markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.boneco));
 
-        infoWindow=getLayoutInflater().inflate(R.layout.marker_adapter, null);
+        infoWindow = getLayoutInflater().inflate(R.layout.marker_adapter, null);
 
         markerOptions.draggable(true);
         chennai = map.addMarker(markerOptions);
@@ -842,26 +1057,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onMarkerDragStart(Marker marker) {
                 marker.setPosition(latLng);
                 marker.showInfoWindow();
-                first=true;
+                first = true;
 
             }
 
             @Override
             public void onMarkerDrag(Marker marker) {
-                if(first) {
+                if (first) {
                     lLDiferenca = marker.getPosition();
 
-                        latDif = lLDiferenca.latitude - (latLng.latitude);
-                        if(latDif<0) latDif=(-1)*latDif;
+                    latDif = lLDiferenca.latitude - (latLng.latitude);
+                    if (latDif < 0) latDif = (-1) * latDif;
 
 
-                        lngDif = lLDiferenca.longitude - (latLng.longitude);
-                        if(lngDif<0) lngDif=(-1)*lngDif;
+                    lngDif = lLDiferenca.longitude - (latLng.longitude);
+                    if (lngDif < 0) lngDif = (-1) * lngDif;
 
-                    first=false;
+                    first = false;
                 }
                 latLng = marker.getPosition();
-                lLDiferenca = new LatLng(latLng.latitude-latDif,latLng.longitude-lngDif);
+                lLDiferenca = new LatLng(latLng.latitude - latDif, latLng.longitude - lngDif);
                 marker.setPosition(lLDiferenca);
                 latLng = marker.getPosition();
 
@@ -886,14 +1101,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map.moveCamera(update);
 
         map.setMyLocationEnabled(true);
-        map.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener(){
+        map.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
 
             @Override
             public boolean onMyLocationButtonClick() {
-                final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
-                if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+                final LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     buildAlertMessageNoGps();
-                }else {
+                } else {
                     firstClick = true;
                     Toast.makeText(getApplicationContext(), "Realocando o Marcador...", Toast.LENGTH_LONG).show();
                 }
@@ -903,8 +1118,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
             public void onMyLocationChange(Location location) {
-                if(firstClick) {
-                    firstClick=false;
+                if (firstClick) {
+                    firstClick = false;
                     plotaNoMap(location);
                 }
             }
@@ -915,126 +1130,249 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     ///////////////////
     //Plotagem do local no mapa
 
-     public void plotaNoMap(Location location) {
-     // Kabloey
-     //plota, carrega dados do maker e focaliza onde � desejado
+    public void plotaNoMap(Location location) {
+        // Kabloey
+        //plota, carrega dados do maker e focaliza onde � desejado
 
         map.clear();
 
-         map.setMapType(TYPE_MAP);
-         //plotagem da UFJF - aqui ele posiciona a visualiza��o  no ponto
-         latLng = new LatLng(location.getLatitude(), location.getLongitude());
-         CameraPosition position = new CameraPosition.Builder()
-                 .target(latLng)
-                 .bearing(0)
-                 .tilt(45)
-                 .zoom(MIN_ZOOM)
-                 .build();
+        map.setMapType(TYPE_MAP);
+        //plotagem da UFJF - aqui ele posiciona a visualiza��o  no ponto
+        latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        CameraPosition position = new CameraPosition.Builder()
+                .target(latLng)
+                .bearing(0)
+                .tilt(45)
+                .zoom(MIN_ZOOM)
+                .build();
 
-         //plota o marker
-
-         markerOptions = new MarkerOptions();
-         markerOptions.position(latLng);
-
-
-
-         //markerOptions.snippet();
-
-         markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
-         //markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.boneco));
-
-         infoWindow=getLayoutInflater().inflate(R.layout.marker_adapter, null);
-
-         markerOptions.draggable(true);
-         chennai = map.addMarker(markerOptions);
+        //plota o marker
+        linkLocal = null;
+        markerOptions = new MarkerOptions();
+        markerOptions.position(latLng);
 
 
-         map.setInfoWindowAdapter(new CustomInfoAdapter());
-         map.setOnInfoWindowClickListener(null);
-         map.setOnMarkerClickListener(this);
-         map.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+        //markerOptions.snippet();
 
-             @Override
-             public void onInfoWindowClick(Marker marker) {
+        markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+        //markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.boneco));
 
-                 final Intent intent = new Intent(MainActivity.this, SendLocalActivity.class);
-                 startActivity(intent);
+        infoWindow = getLayoutInflater().inflate(R.layout.marker_adapter, null);
 
-
-             }
-         });
+        markerOptions.draggable(true);
+        chennai = map.addMarker(markerOptions);
 
 
-         map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+        map.setInfoWindowAdapter(new CustomInfoAdapter());
+        map.setOnInfoWindowClickListener(null);
+        map.setOnMarkerClickListener(this);
+        map.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
 
-             @Override
-             public void onMarkerDragStart(Marker marker) {
-                 marker.setPosition(latLng);
-                 marker.showInfoWindow();
-                 first=true;
+            @Override
+            public void onInfoWindowClick(Marker marker) {
 
-             }
-
-             @Override
-             public void onMarkerDrag(Marker marker) {
-                 if(first) {
-                     lLDiferenca = marker.getPosition();
-
-                     latDif = lLDiferenca.latitude - (latLng.latitude);
-                     if(latDif<0) latDif=(-1)*latDif;
+                final Intent intent = new Intent(MainActivity.this, SendLocalActivity.class);
+                startActivity(intent);
 
 
-                     lngDif = lLDiferenca.longitude - (latLng.longitude);
-                     if(lngDif<0) lngDif=(-1)*lngDif;
+            }
+        });
 
-                     first=false;
-                 }
-                 latLng = marker.getPosition();
-                 lLDiferenca = new LatLng(latLng.latitude-latDif,latLng.longitude-lngDif);
-                 marker.setPosition(lLDiferenca);
-                 latLng = marker.getPosition();
 
-                 marker.showInfoWindow();
-             }
+        map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
 
-             @Override
-             public void onMarkerDragEnd(Marker marker) {
-                 marker.setPosition(latLng);
-                 marker.showInfoWindow();
-             }
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+                marker.setPosition(latLng);
+                marker.showInfoWindow();
+                first = true;
 
-         });
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+                if (first) {
+                    lLDiferenca = marker.getPosition();
+
+                    latDif = lLDiferenca.latitude - (latLng.latitude);
+                    if (latDif < 0) latDif = (-1) * latDif;
+
+
+                    lngDif = lLDiferenca.longitude - (latLng.longitude);
+                    if (lngDif < 0) lngDif = (-1) * lngDif;
+
+                    first = false;
+                }
+                latLng = marker.getPosition();
+                lLDiferenca = new LatLng(latLng.latitude - latDif, latLng.longitude - lngDif);
+                marker.setPosition(lLDiferenca);
+                latLng = marker.getPosition();
+
+                marker.showInfoWindow();
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                marker.setPosition(latLng);
+                marker.showInfoWindow();
+            }
+
+        });
 
 
             /*
             *
             *
             * */
-         //atualiza as configura��es no mapa
-         CameraUpdate update = CameraUpdateFactory.newCameraPosition(position);
-         map.moveCamera(update);
+        //atualiza as configura��es no mapa
+        CameraUpdate update = CameraUpdateFactory.newCameraPosition(position);
+        map.moveCamera(update);
 
-         map.setMyLocationEnabled(true);
-         map.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+        map.setMyLocationEnabled(true);
+        map.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
 
-             @Override
-             public boolean onMyLocationButtonClick() {
-                 firstClick = true;
+            @Override
+            public boolean onMyLocationButtonClick() {
+                firstClick = true;
 
-                 return false;
-             }
-         });
-         map.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-             @Override
-             public void onMyLocationChange(Location location) {
+                return false;
+            }
+        });
+        map.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+            @Override
+            public void onMyLocationChange(Location location) {
 
-                 if (firstClick) {
-                     firstClick = false;
-                     plotaNoMap(location);
-                 }
-             }
-         });
-     }
+                if (firstClick) {
+                    firstClick = false;
+                    plotaNoMap(location);
+                }
+            }
+        });
+    }
+
+    public void plotaNoMap(Local location) {
+        // Kabloey
+        //plota, carrega dados do maker e focaliza onde � desejado
+
+        map.clear();
+
+        map.setMapType(TYPE_MAP);
+        //plotagem da UFJF - aqui ele posiciona a visualiza��o  no ponto
+        latLng = new LatLng(Double.parseDouble(location.getLatitude()), Double.parseDouble(location.getLongitude()));
+        CameraPosition position = new CameraPosition.Builder()
+                .target(latLng)
+                .bearing(0)
+                .tilt(45)
+                .zoom(MIN_ZOOM)
+                .build();
+
+        //plota o marker
+        linkLocal = null;
+        markerOptions = new MarkerOptions();
+        markerOptions.position(latLng);
+        markerOptions.title(location.getNome());
+        linkLocal = location.getLink();
+
+        //markerOptions.snippet();
+
+        markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+        //markerOptions.icon(BitmapDescriptorFactory.fromResource(R.drawable.boneco));
+
+        infoWindow = getLayoutInflater().inflate(R.layout.marker_adapter, null);
+
+        markerOptions.draggable(true);
+        chennai = map.addMarker(markerOptions);
+
+
+        map.setInfoWindowAdapter(new CustomInfoAdapter());
+        map.setOnInfoWindowClickListener(null);
+        map.setOnMarkerClickListener(this);
+        map.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+
+                final Intent intent = new Intent(MainActivity.this, SendLocalActivity.class);
+                startActivity(intent);
+
+
+            }
+        });
+
+
+        map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+                marker.setPosition(latLng);
+                marker.showInfoWindow();
+                first = true;
+
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+                if (first) {
+                    lLDiferenca = marker.getPosition();
+
+                    latDif = lLDiferenca.latitude - (latLng.latitude);
+                    if (latDif < 0) latDif = (-1) * latDif;
+
+
+                    lngDif = lLDiferenca.longitude - (latLng.longitude);
+                    if (lngDif < 0) lngDif = (-1) * lngDif;
+
+                    first = false;
+                }
+                latLng = marker.getPosition();
+                lLDiferenca = new LatLng(latLng.latitude - latDif, latLng.longitude - lngDif);
+                marker.setPosition(lLDiferenca);
+                latLng = marker.getPosition();
+
+                marker.showInfoWindow();
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                marker.setPosition(latLng);
+                marker.showInfoWindow();
+            }
+
+        });
+
+
+            /*
+            *
+            *
+            * */
+        //atualiza as configura��es no mapa
+        CameraUpdate update = CameraUpdateFactory.newCameraPosition(position);
+        map.moveCamera(update);
+
+        map.setMyLocationEnabled(true);
+        map.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+
+            @Override
+            public boolean onMyLocationButtonClick() {
+                firstClick = true;
+
+                return false;
+            }
+        });
+        map.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+            @Override
+            public void onMyLocationChange(Location location) {
+
+                if (firstClick) {
+                    firstClick = false;
+                    plotaNoMap(location);
+                }
+            }
+        });
+    }
+
+
+
     private void buildAlertMessageNoGps() {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage("Seu GPS está desligado, deseja ativá-lo?")
@@ -1053,17 +1391,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         alert.show();
     }
 
-    public void selfDestruct2(String selecionado)
-    {
+    public void selfDestruct2(String selecionado) {
 
         //var pref -> o nome mapaesc
         //valor ->nome do mapa referenciado ao mapa escolhido
 
-        if(selecionado==null){
+        if (selecionado == null) {
             //esse if foi contruido para evitar q o usu�rio escolha um mapa em quanto ta carregando (ou seja, n�o tem op��es)
             Toast.makeText(this, "Nenhuma opção selecionada!", Toast.LENGTH_SHORT).show();
-        }
-        else{
+        } else {
             //pega o nome do mapa escolhido, avisa o escolhido, salva a prefer�ncia, e recria o menu
             mapaescolhido = selecionado;
             // this.setTitle(selecionado);
@@ -1076,42 +1412,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-
-
     ///////Metodos relacionados as preferencias
 
     /*Jo�o-10/09-carregar no inicio da app a escolha de mapa do usu�rio*/
-    public void loadMapaPref(){
+    public void loadMapaPref() {
         // Restore preferences
         SharedPreferences mapa = getSharedPreferences(MAPA_PREF, 0);
 
         String aux = mapa.getString("mapaescolhido", null);
-        if(aux==null){
+        if (aux == null) {
 
-        }else{
-            mapaescolhido=aux;
+        } else {
+            mapaescolhido = aux;
         }
     }
+
     /*Jo�o-10/09-carregar no inicio da app os mapas que tem registrado e qual a data de atualiza��o*/
     //
-    public void loadAllPrefs(){
+    public void loadAllPrefs() {
         // Restore preferences
         SharedPreferences versoes = getSharedPreferences(VERSION_PREFS, 0);
-        Map<String, ?> infos= versoes.getAll();
-        for (Map.Entry<String, ?> entry : infos.entrySet())
-        {
-            if(mapas.indexOf(entry.getKey())==-1){
+        Map<String, ?> infos = versoes.getAll();
+        for (Map.Entry<String, ?> entry : infos.entrySet()) {
+            if (mapas.indexOf(entry.getKey()) == -1) {
                 mapas.add(entry.getKey());
-                ultimosupdates.add((String)entry.getValue());
+                ultimosupdates.add((String) entry.getValue());
             }
         }
-        for(int i=0;i<mapas.size();i++){
+        for (int i = 0; i < mapas.size(); i++) {
             String aux = versoes.getString(mapas.get(i), ultimosupdates.get(i));
-            savePrefs(mapas.get(i),aux);
+            savePrefs(mapas.get(i), aux);
         }
     }
+
     /*Jo�o-10/09-Salva a escolha de mapa do usu�rio, deve ser chamado no bot�o de salvar as configura��es*/
-    public void saveMapaPref(String varPref, String valor){
+    public void saveMapaPref(String varPref, String valor) {
         // We need an Editor object to make preference changes.
         // All objects are from android.context.Context
         SharedPreferences settings = getSharedPreferences(MAPA_PREF, 0);
@@ -1121,9 +1456,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Commit the edits!
         editor.commit();
     }
+
     /*Jo�o-10/09-Salva mapas e datas de atualiza��o nas preferencias, caso seja um novo mapa � passado o nome e uma datapadr�o=26-10-1989*/
     //N�O USADO AINDA
-    public void savePrefs(String name, String valor){
+    public void savePrefs(String name, String valor) {
         // We need an Editor object to make preference changes.
         // All objects are from android.context.Context
         SharedPreferences settings = getSharedPreferences(VERSION_PREFS, 0);
@@ -1140,7 +1476,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
     /* Fun��o para verificar exist�ncia de conex�o com a internet*/
-    public  boolean verificaConexao() {
+    public boolean verificaConexao() {
         boolean conectado;
         ConnectivityManager conectivtyManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (conectivtyManager.getActiveNetworkInfo() != null
@@ -1153,6 +1489,65 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return conectado;
     }
 
+    /*Jo�o-10/09-carregar no inicio da app a escolha de mapa do usu�rio*/
+    public void loadCityPref() {
+        // Restore preferences
+        SharedPreferences cidade = getSharedPreferences(CITY_PREF, 0);
+
+        String aux = cidade.getString("CidadeEscolhida", null);
+        if (aux == null) {
+
+        } else {
+            cidadeAtual = aux;
+        }
+    }
+
+    /*Jo�o-10/09-carregar no inicio da app os mapas que tem registrado e qual a data de atualiza��o*/
+    //
+    public void loadAllCityPrefs() {
+        // Restore preferences
+        SharedPreferences versoes = getSharedPreferences(ALL_CITY_PREFS, 0);
+        Map<String, ?> infos = versoes.getAll();
+        for (Map.Entry<String, ?> entry : infos.entrySet()) {
+            if (cities.indexOf(entry.getKey()) == -1) {
+                cities.add(entry.getKey());
+                ultimosupdates.add((String) entry.getValue());
+            }
+        }
+        for (int i = 0; i < cities.size(); i++) {
+            String aux = versoes.getString(cities.get(i), ultimosupdates.get(i));
+            saveCityPrefs(cities.get(i), aux);
+
+        }
+    }
+
+    /*Jo�o-10/09-Salva a escolha de mapa do usu�rio, deve ser chamado no bot�o de salvar as configura��es*/
+    public void saveCityPref(String varPref, String valor) {
+        // We need an Editor object to make preference changes.
+        // All objects are from android.context.Context
+        SharedPreferences settings = getSharedPreferences(CITY_PREF, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(varPref, valor);
+
+        // Commit the edits!
+        editor.commit();
+    }
+
+    /*Jo�o-10/09-Salva mapas e datas de atualiza��o nas preferencias, caso seja um novo mapa � passado o nome e uma datapadr�o=26-10-1989*/
+    //N�O USADO AINDA
+    public void saveCityPrefs(String name, String valor) {
+        // We need an Editor object to make preference changes.
+        // All objects are from android.context.Context
+        SharedPreferences settings = getSharedPreferences(ALL_CITY_PREFS, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(name, valor);
+
+        // Commit the edits!
+        editor.commit();
+        int i = cities.indexOf(name);
+    }
+
+
     @Override
     public boolean onMarkerClick(Marker marker) {
 
@@ -1160,7 +1555,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
-    public void actionButton(View view){
+    public void actionButton(View view) {
         final Intent intent = new Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://www.ufjf.br/portal"));
         this.startActivity(intent);
     }
@@ -1182,25 +1577,572 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
 
-
-
     }
     //static ImageView image;
 
     public void displayView(Marker arg0) {
 
 
-
-
         //((ImageView) infoWindow.findViewById(R.id.lblImageHeader)).setImageResource(R.drawable.logo_ufjf);
-        ((TextView) infoWindow.findViewById(R.id.lblListHeader)).setText("Cadastrar esse lugar?");
+
+        String s = "Cadastrar esse lugar?";
+        String s2 = arg0.getTitle();
+        if(arg0.getTitle()!=null){
+            s = "Alterar: " + arg0.getTitle();
+        }
+        nomeLocal = arg0.getTitle();
+        ((TextView) infoWindow.findViewById(R.id.lblListHeader)).setText(s);
 
 
-        ((TextView) infoWindow.findViewById(R.id.lblLat)).setText("Lat: "+String.valueOf(latLng.latitude));
-        ((TextView) infoWindow.findViewById(R.id.lblLong)).setText("Long: "+String.valueOf(latLng.longitude));
+        ((TextView) infoWindow.findViewById(R.id.lblLat)).setText("Lat: " + String.valueOf(latLng.latitude));
+        ((TextView) infoWindow.findViewById(R.id.lblLong)).setText("Long: " + String.valueOf(latLng.longitude));
 
 
     }
 ///http://blog.kerul.net/2014/04/insert-new-record-on-android-online.html
 
+
+    public static PerfilData getPerfil() {
+        return perfil;
+    }
+
+    public static void setPerfil(PerfilData perfilNovo) {
+        perfil = perfilNovo;
+    }
+
+    //inner class que efetua o download e instala os dados na aplica��o
+    public class DownloadTask extends AsyncTask<String, Integer, String> {
+
+        private Context context;
+        private PowerManager.WakeLock mWakeLock;
+
+        public DownloadTask(Context context) {
+            this.context = context;
+        }
+
+        //salva os dados dentro da aplica��o
+        @Override
+        protected String doInBackground(String... sUrl) {
+            String s = null;
+
+            //metodo para salvar dentro do app o arquivo
+            s = INTERNALmethod(sUrl);
+
+
+            return s;
+        }
+
+        //metodo q insere os dados dentro do app
+        protected String INTERNALmethod(String... sUrl) {
+            InputStream input = null;
+            OutputStream output = null;
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(sUrl[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                // expect HTTP 200 OK, so we don't mistakenly save error report
+                // instead of the file
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    return "Server returned HTTP " + connection.getResponseCode()
+                            + " " + connection.getResponseMessage();
+                }
+
+                // this will be useful to display download percentage
+                // might be -1: server did not report the length
+                int fileLength = connection.getContentLength();
+
+                // download the file
+                input = connection.getInputStream();
+
+                String s = context.getFilesDir().toString();
+
+                output = new FileOutputStream(context.getFilesDir() + "/" + mapaescolhido2 + ".xml");
+
+
+                byte data[] = new byte[4096];
+                long total = 0;
+                int count;
+                while ((count = input.read(data)) != -1) {
+                    // allow canceling with back button
+                    if (isCancelled()) {
+                        input.close();
+                        return null;
+                    }
+                    total += count;
+                    // publishing the progress....
+                    if (fileLength > 0) // only if total length is known
+                        publishProgress((int) (total * 100 / fileLength));
+                    output.write(data, 0, count);
+                }
+            } catch (Exception e) {
+                return e.toString();
+            } finally { //por fim fecha os arquivos de leitura / escrita
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+            return null;
+
+        }
+
+        //metodo q grava no cart�o (n�o est� sendo usado
+        protected String EXTERNALmethod(String... sUrl) {
+
+            InputStream input = null;
+            OutputStream output = null;
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(sUrl[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                // expect HTTP 200 OK, so we don't mistakenly save error report
+                // instead of the file
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    return "Server returned HTTP " + connection.getResponseCode()
+                            + " " + connection.getResponseMessage();
+                }
+
+                // this will be useful to display download percentage
+                // might be -1: server did not report the length
+                int fileLength = connection.getContentLength();
+
+                // download the file
+                input = connection.getInputStream();
+                //String mapaescolhido = Main.getMapaEscolhido();
+
+                output = new FileOutputStream(Environment.getExternalStorageDirectory().getPath() + "/" + mapaescolhido2 + ".xml");
+
+                byte data[] = new byte[4096];
+                long total = 0;
+                int count;
+                while ((count = input.read(data)) != -1) {
+                    // allow canceling with back button
+                    if (isCancelled()) {
+                        input.close();
+                        return null;
+                    }
+                    total += count;
+                    // publishing the progress....
+                    if (fileLength > 0) // only if total length is known
+                        publishProgress((int) (total * 100 / fileLength));
+                    output.write(data, 0, count);
+                }
+            } catch (Exception e) {
+                return e.toString();
+            } finally {
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+            return null;
+
+        }
+
+        //prepara��o para executa o salvamento dos arquivos na mem�ria do aparelho
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // take CPU lock to prevent CPU from going off if the user
+            // presses the power button during download
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                    getClass().getName());
+            mWakeLock.acquire();
+            mProgressDialog.show();
+        }
+
+        //aqui mostra um progresso do download
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            super.onProgressUpdate(progress);
+            // if we get here, length is known, now set indeterminate to false
+            mProgressDialog.setIndeterminate(false);
+            mProgressDialog.setMax(100);
+            mProgressDialog.setProgress(progress[0]);
+            if (progress[0] == 100 || !verificaConexao() || !estaCarregandoLocais) {
+                mProgressDialog.dismiss();
+            }
+        }
+
+        //execu��o posterior ao download
+        @Override
+        protected void onPostExecute(String result) {
+            mWakeLock.release();
+            if (mProgressDialog.isShowing()) mProgressDialog.dismiss();
+//	      mProgressDialog.dismiss();
+            if (result != null) { //aviso caso tenha ocorrido um erro
+
+                if (verificaConexao()) {
+                    Toast.makeText(context, "Sem conexão para o download", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(context, "Erro de download", Toast.LENGTH_LONG).show();
+                    statusUpdate = "Checar Atualizações";
+                }
+            } else {//aviso q ocorreu tudo certo
+
+                Toast.makeText(context, "Arquivo Baixado", Toast.LENGTH_SHORT).show();
+                Calendar today = Calendar.getInstance();
+                SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy");//gera a data da autualiza��o
+                String formattedDate = df.format(today.getTime());
+                savePrefs(mapas.get(0), formattedDate);
+                //informa q est� atualizado
+
+                statusUpdate = "Atualizado";
+                //Toast.makeText(context, statusUpdate, Toast.LENGTH_LONG).show();
+                statusUpdate = "Checar Atualizações";
+
+            }
+        }
+
+    }
+
+    public class DownloadTask2 extends AsyncTask<String, Integer, String> {
+
+        private Context context;
+        private PowerManager.WakeLock mWakeLock;
+
+        public DownloadTask2(Context context) {
+            this.context = context;
+        }
+
+        //salva os dados dentro da aplica��o
+        @Override
+        protected String doInBackground(String... sUrl) {
+            String s = null;
+
+            //metodo para salvar dentro do app o arquivo
+            s = INTERNALmethod(sUrl);
+
+
+            return s;
+        }
+
+        //metodo q insere os dados dentro do app
+        protected String INTERNALmethod(String... sUrl) {
+            InputStream input = null;
+            OutputStream output = null;
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(sUrl[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                // expect HTTP 200 OK, so we don't mistakenly save error report
+                // instead of the file
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    return "Server returned HTTP " + connection.getResponseCode()
+                            + " " + connection.getResponseMessage();
+                }
+
+                // this will be useful to display download percentage
+                // might be -1: server did not report the length
+                int fileLength = connection.getContentLength();
+
+                // download the file
+                input = connection.getInputStream();
+
+                String s = context.getFilesDir().toString();
+
+                output = new FileOutputStream(context.getFilesDir() + "/Areas.xml");
+
+
+                byte data[] = new byte[4096];
+                long total = 0;
+                int count;
+                while ((count = input.read(data)) != -1) {
+                    // allow canceling with back button
+                    if (isCancelled()) {
+                        input.close();
+                        return null;
+                    }
+                    total += count;
+                    // publishing the progress....
+                    if (fileLength > 0) // only if total length is known
+                        publishProgress((int) (total * 100 / fileLength));
+                    output.write(data, 0, count);
+                }
+            } catch (Exception e) {
+                return e.toString();
+            } finally { //por fim fecha os arquivos de leitura / escrita
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+            return null;
+
+        }
+
+        //metodo q grava no cart�o (n�o est� sendo usado
+        protected String EXTERNALmethod(String... sUrl) {
+
+            InputStream input = null;
+            OutputStream output = null;
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL(sUrl[0]);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                // expect HTTP 200 OK, so we don't mistakenly save error report
+                // instead of the file
+                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                    return "Server returned HTTP " + connection.getResponseCode()
+                            + " " + connection.getResponseMessage();
+                }
+
+                // this will be useful to display download percentage
+                // might be -1: server did not report the length
+                int fileLength = connection.getContentLength();
+
+                // download the file
+                input = connection.getInputStream();
+                //String mapaescolhido = Main.getMapaEscolhido();
+
+                output = new FileOutputStream(Environment.getExternalStorageDirectory().getPath() + "/" + mapaescolhido2 + ".xml");
+
+                byte data[] = new byte[4096];
+                long total = 0;
+                int count;
+                while ((count = input.read(data)) != -1) {
+                    // allow canceling with back button
+                    if (isCancelled()) {
+                        input.close();
+                        return null;
+                    }
+                    total += count;
+                    // publishing the progress....
+                    if (fileLength > 0) // only if total length is known
+                        publishProgress((int) (total * 100 / fileLength));
+                    output.write(data, 0, count);
+                }
+            } catch (Exception e) {
+                return e.toString();
+            } finally {
+                try {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                } catch (IOException ignored) {
+                }
+
+                if (connection != null)
+                    connection.disconnect();
+            }
+            return null;
+
+        }
+
+        //prepara��o para executa o salvamento dos arquivos na mem�ria do aparelho
+        // @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            // take CPU lock to prevent CPU from going off if the user
+            // presses the power button during download
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                    getClass().getName());
+            mWakeLock.acquire();
+            //mProgressDialog.show();
+        }
+        //aqui mostra um progresso do download
+        //@Override
+        //protected void onProgressUpdate(Integer... progress) {
+        //    super.onProgressUpdate(progress);
+        // if we get here, length is known, now set indeterminate to false
+        //    mProgressDialog.setIndeterminate(false);
+        //    mProgressDialog.setMax(100);
+        //    mProgressDialog.setProgress(progress[0]);
+        //    if (progress[0] == 100) {
+        //        mProgressDialog.dismiss();
+        //    }
+        // }
+
+        //execu��o posterior ao download
+        @Override
+        protected void onPostExecute(String result) {
+            mWakeLock.release();
+//	      mProgressDialog.dismiss();
+            if (result != null) { //aviso caso tenha ocorrido um erro
+                Toast.makeText(context, "Erro de Download", Toast.LENGTH_LONG).show();
+                statusUpdate = "Checar Atualizações";
+            } else {//aviso q ocorreu tudo certo
+                Toast.makeText(context, "Mapas baixados", Toast.LENGTH_SHORT).show();
+
+                //informa q est� atualizado
+
+                //statusUpdate = "Atualizado";
+                //Toast.makeText(context, statusUpdate, Toast.LENGTH_LONG).show();
+                statusUpdate = "Checar Atualizações";
+                //ultimosupdates.contains(formattedDate);
+
+            }
+
+            useDownload();
+        }
+
+        public void useDownload() {
+
+            File f = new File(context.getFilesDir() + "/Areas.xml");
+
+
+            InputSource is = new InputSource(f.toURI().toString());
+            if (ehArea) {
+                areas = RssParserHelper.parseArea(is);
+
+                ////TREXO ADAPTADO PARA TESTE
+
+                //cidades = new ArrayList<Cidade>();
+
+
+                for (Area a : areas) {
+                    if (!cities.contains(a.getCidade())) {
+                        cities.add(a.getCidade());
+                        saveCityPrefs(a.getCidade(), datapadrao);
+                    }
+
+                }
+                ArrayList<String> cidadesToDelete = new ArrayList<String>();
+                for (String cidade : cities) {
+                    int index = -1;
+                    for (Area area : areas) {
+
+                        if (area.getCidade().indexOf(cidade) != -1) {
+                            index = 1;
+                        }
+                    }
+                    if (index == -1) {
+                        cidadesToDelete.add(cidade);
+                    }
+                }
+                for (String cidade : cidadesToDelete) {
+                    cities.remove(cidade);
+                }
+
+
+
+/*
+                Cidade cidade = new Cidade();
+                cidade.setAreas(areas);
+                cidade.setIdCidade(0);
+                cidade.setResponsavel("Barrere");
+                cidade.setNome("Juiz de Fora/MG");
+                cidades.add(cidade);
+                cidade = new Cidade();
+                Area a = new Area();
+                List<Area> ar = new ArrayList<Area>();
+                cidade.setAreas(ar);
+                cidade.setIdCidade(1);
+                cidade.setResponsavel("Barrere");
+                cidade.setNome("Belo Horizonte/MG");
+                cidades.add(cidade);
+
+                for(Cidade cid: cidades){
+                    if(!cities.contains(cid.getNome())){
+                        cities.add(cid.getNome());
+                        saveCityPrefs(cid.getNome(), datapadrao);
+                    }
+                }*/
+
+
+                ////FIM TREXO ADAPTADO PARA TESTE
+
+                //caso mapas esteja vazio ele é preenchido já q será utilizado para fornecer os dados
+                if (mapas.isEmpty()) {
+                    for (Area area : areas) {
+                        mapas.add(area.getNome());
+                        ultimosupdates.add(datapadrao);
+                        savePrefs(area.getNome(), datapadrao);
+                    }
+                } else {//se n�o atualiza o q interessa
+                    for (Area area : areas) {
+                        int index = mapas.indexOf(area.getNome());
+                        if (index == -1) {
+                            mapas.add(area.getNome());
+                            ultimosupdates.add(datapadrao);
+                            savePrefs(area.getNome(), datapadrao);
+                        }
+                        String codigo = (String) area.getIdarea().toString();
+                        //ehArea=false;
+                        //SendHttpRequestTask t = new SendHttpRequestTask();//ENVIA AO SERVIDOR UMA REQUISI��O ASYNCTASK, OU SEJA, EM PARALELO PARA N�O TRAVAR A APLICA��O;
+                        //String[] params = new String[]{url+urlLocal+codigo/*+codigo da �rea*/, null, null};
+                        //t.execute(params);
+
+                    }
+                }
+                ArrayList<String> mapasToDelete = new ArrayList<String>();
+                for (String mapa : mapas) {
+                    int index = -1;
+                    for (Area area : areas) {
+
+                        if (area.getNome().indexOf(mapa) != -1) {
+                            index = 1;
+                        }
+                    }
+                    if (index == -1) {
+                        mapasToDelete.add(mapa);
+                    }
+                }
+                for (String mapa : mapasToDelete) {
+                    mapas.remove(mapa);
+                }
+                // se areas e mapas estiverem vazios significa q � primeira vez q a aplica��o � carregada
+                // e n�o h� comunica��o com o servidor
+                // logo deve se informar ao usu�rio q a aplica��o vai ter q ser executada mais tarde
+                if (areas.isEmpty() && mapas.isEmpty()) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                    builder.setMessage("Para a primeira vez que a aplicação é aberta, " +
+                            "a conexão com o servidor é necessária.\n Desculpe-nos o trantorno " +
+                            "e reabra a aplicação mais tarde")
+                            .setTitle("Servidor OFF");
+                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            // User clicked OK button
+                            finish();
+                        }
+                    });
+
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
+
+                } else {
+                    ableToContinue = true;
+
+                    ///Faz o mesmo na configura��o em lista
+                    //if (mapasWasEmpty || firstClick) {
+                    Toast.makeText(getApplicationContext(), "Opções de Mapas Carregadas", Toast.LENGTH_LONG).show();
+                    //}
+                }
+            }
+            statusUpdate = "Checar Atualizações";
+            perfil.restartMapas(mapas);
+
+        }
+
+
+    }
 }

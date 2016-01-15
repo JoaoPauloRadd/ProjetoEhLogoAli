@@ -5,7 +5,7 @@ android {
         config {
             keyAlias 'ToAquiKey'
             keyPassword 'ToAqui113'
-            storeFile file('C:/Users/João Paulo Radd/workspace/Apps Projeto/toaqui/androidTA.jks')
+            storeFile file('C:/João paulo radd/toaqui/toaqui/androidTA.jks')
             storePassword 'ToAqui113'
         }
     }

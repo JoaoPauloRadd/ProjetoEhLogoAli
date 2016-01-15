@@ -52,7 +52,7 @@ public class SendLocalActivity extends AppCompatActivity {
 
     static List<String> mapas;
     private static String url = "http://ehlogoali.eduardobarrere.com/consulta/";
-    private static String urlArea = "xml.php";
+    private static String urlArea = "xml6.php";
     String datapadrao = "26-10-1989";
     List<Area> areas;
     List<String> ultimosupdates;
@@ -76,6 +76,7 @@ public class SendLocalActivity extends AppCompatActivity {
     private static String url_create_product = "http://ehlogoali.eduardobarrere.com/joao";
     Double lat;
     Double lng;
+    public static PerfilData perfil;
 
 
     @Override
@@ -92,7 +93,9 @@ public class SendLocalActivity extends AppCompatActivity {
         inputName = (EditText) findViewById(R.id.nome);
         inputDesc = (EditText) findViewById(R.id.link);
 
-                //--------------------------------------------
+        inputName.setText(MainActivity.getNomeLocal());
+        inputDesc.setText(MainActivity.getLinkLocal());
+        //--------------------------------------------
         mapas = new ArrayList<String>();
         ultimosupdates = new ArrayList<String>();
         statusUpdate = "Checar Atualizações";
@@ -124,7 +127,7 @@ public class SendLocalActivity extends AppCompatActivity {
                 //showTutorial(0);
             }else{
                 //aqui ele atualiza ou carrega as áreas existentes
-                verificaAreas(true);
+                //verificaAreas(true);
                 atualiza = false;
             }
             //SendHttpRequestTask t = new SendHttpRequestTask();
@@ -136,11 +139,12 @@ public class SendLocalActivity extends AppCompatActivity {
         //aqui ele vai baixar as áreas caso seja o primeiro acesso
         if(atualiza)
         {
-            verificaAreas(false);
+            //verificaAreas(false);
 
             ehArea = true;
         }
         msgLocais = true;
+
 
         mProgressDialog = new ProgressDialog(SendLocalActivity.this);
         mProgressDialog.setMessage("Carregando...");
@@ -149,6 +153,9 @@ public class SendLocalActivity extends AppCompatActivity {
         mProgressDialog.setCancelable(true);
 
     }
+
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -934,6 +941,7 @@ public class SendLocalActivity extends AppCompatActivity {
                 }
             }
             statusUpdate = "Checar Atualizações";
+            perfil.restartMapas(mapas);
         }
 
     }
@@ -1085,6 +1093,14 @@ public class SendLocalActivity extends AppCompatActivity {
             //finish();
         }
 
+    }
+
+    public static PerfilData getPerfil(){
+        return perfil;
+    }
+
+    public static void setPerfil(PerfilData perfilNovo){
+        perfil = perfilNovo;
     }
 
 }

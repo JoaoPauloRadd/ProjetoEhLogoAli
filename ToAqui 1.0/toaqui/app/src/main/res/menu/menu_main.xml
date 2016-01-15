@@ -5,26 +5,55 @@
 
 
     <item
+        android:id="@+id/action_settings" android:title="@string/action_settings"
+        android:orderInCategory="1" app:showAsAction="never"
+        android:icon="@drawable/map" />
+
+
+    <item
+        android:id="@+id/action_settings3" android:title="@string/checar"
+        android:orderInCategory="3" app:showAsAction="never"
+        android:icon="@drawable/up" />
+    <item
+        android:id="@+id/action_settings4" android:title="@string/cidade"
+        android:orderInCategory="4" app:showAsAction="never"
+        android:icon="@drawable/up" />
+
+
+    <item
         android:id="@+id/menu3"
         android:title="Satélite / Normal"
-        android:orderInCategory="4"
+        android:orderInCategory="5"
         android:icon="@drawable/sat"/>
 
     <item
         android:id="@+id/menu1"
         android:title="@string/sobre"
-        android:orderInCategory="5"
+        android:orderInCategory="6"
         android:icon="@drawable/sobre"/>
     <item
         android:id="@+id/menu5"
         android:title="@string/tut"
-        android:orderInCategory="6"
+        android:orderInCategory="7"
         android:icon="@drawable/tut"/>
     <item
         android:id="@+id/menu6"
         android:title="@string/erro"
-        android:orderInCategory="7"
+        android:orderInCategory="8"
         android:icon="@drawable/erro"/>
+
+    <item
+        android:id="@+id/menu2"
+        android:title="Locais"
+        android:icon="@drawable/orangedot"
+        app:showAsAction="always"
+        android:actionLayout="@drawable/orangedot">
+        <menu >
+            <item
+                android:id="@+id/submenu1"
+                android:title="Locais" />
+        </menu>
+    </item>
 
 
 </menu>
