@@ -257,6 +257,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
 
 
         if(isUser(0)) {
+
             Toast.makeText(this, "Conectado", Toast.LENGTH_LONG).show();
             Intent intent = new Intent(this, MainActivity.class);
             startActivity(intent);
@@ -300,6 +301,7 @@ public class GooglePlayServicesActivity extends AppCompatActivity implements
                     mail2 = user.getEmail().toString();
                     if (mail1.equals(mail2)) {
                         mail = mail2+"ok";
+                        perfil.setSuperUser(user.isSuperUser());
                         return true;
                     }
                 }

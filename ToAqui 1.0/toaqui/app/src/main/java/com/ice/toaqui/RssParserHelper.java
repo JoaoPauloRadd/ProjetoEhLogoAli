@@ -112,7 +112,7 @@ public class RssParserHelper {
         String EXPR_LIST = "//logins/login";
 
         String EXPR_EMAIL = "google_email";
-
+        //String EXPR_SUSER = " ";
 
         try {
             XPath xpath = XPathFactory.newInstance().newXPath();
@@ -123,8 +123,11 @@ public class RssParserHelper {
                 Node item = nodes.item(index);
 
                 Node emailNode    = (Node) xpath.evaluate(EXPR_EMAIL, item, XPathConstants.NODE);
+                //Node superUserNode    = (Node) xpath.evaluate(EXPR_SUSER, item, XPathConstants.NODE);
+
 
                 Usuarios user = new Usuarios(emailNode.getTextContent());
+                //Usuarios user = new Usuarios(emailNode.getTextContent(), superUserNode.getTextContent());
                 users.add(user);
                 index++;
             }

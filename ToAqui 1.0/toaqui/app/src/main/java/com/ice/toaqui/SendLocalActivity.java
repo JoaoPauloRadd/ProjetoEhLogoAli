@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Environment;
@@ -51,6 +52,7 @@ import org.json.JSONObject;
 public class SendLocalActivity extends AppCompatActivity {
 
     static List<String> mapas;
+    static List<String> cities;
     private static String url = "http://ehlogoali.eduardobarrere.com/consulta/";
     private static String urlArea = "xml6.php";
     String datapadrao = "26-10-1989";
@@ -61,11 +63,16 @@ public class SendLocalActivity extends AppCompatActivity {
     String statusUpdate;
     public static final String VERSION_PREFS = "VersionsFile";
     public static final String MAPA_PREF = "MapaEscolhido";
+    public static final String CITY_PREF = "CidadeEscolhida";
+    public static final String ALL_CITY_PREFS = "CidadesExistentes";
+
     public static String mapaescolhido;
     static boolean ehArea = true;
     public static String mapaescolhido2;
     static boolean ableToContinue = false;
     static TextView textArea;
+    static TextView textCidade;
+
     // Progress Dialog
     private ProgressDialog pDialog;
     private static final String TAG_SUCCESS = "success";
@@ -77,12 +84,14 @@ public class SendLocalActivity extends AppCompatActivity {
     Double lat;
     Double lng;
     public static PerfilData perfil;
+    private static String cidadeAtual;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send_local);
+        perfil = MainActivity.getPerfil();
         TextView textLocation = (TextView)findViewById(R.id.infoLL);
         LatLng latLng = MainActivity.getLatLng();
         lat = latLng.latitude;
@@ -90,13 +99,23 @@ public class SendLocalActivity extends AppCompatActivity {
         textLocation.setText("Latitude: "+lat.toString()+"\nLongitude: "+lng.toString());
 
         textArea = (TextView)findViewById(R.id.area);
+        textCidade = (TextView)findViewById(R.id.cidade);
+
         inputName = (EditText) findViewById(R.id.nome);
         inputDesc = (EditText) findViewById(R.id.link);
+        perfil.setSuperUser(true);
+
+
 
         inputName.setText(MainActivity.getNomeLocal());
         inputDesc.setText(MainActivity.getLinkLocal());
+        textArea.setText(perfil.getMapaAtual());
+        textArea.setVisibility(View.VISIBLE);
+        textCidade.setText(perfil.getCidadeAtual());
+        textCidade.setVisibility(View.VISIBLE);
         //--------------------------------------------
         mapas = new ArrayList<String>();
+        cities = new ArrayList<String>();
         ultimosupdates = new ArrayList<String>();
         statusUpdate = "Checar Atualizações";
 
@@ -104,6 +123,8 @@ public class SendLocalActivity extends AppCompatActivity {
         //Carrega e salva preferencias
         loadAllPrefs();
         loadMapaPref();
+        loadCityPref();
+        loadAllCityPrefs();
         boolean conexao = verificaConexao();
         boolean atualiza = true;
         if(!(conexao) && mapas.isEmpty()){
@@ -121,29 +142,7 @@ public class SendLocalActivity extends AppCompatActivity {
             AlertDialog dialog = builder.create();
             dialog.show();
         }
-        else{
-//			carregamento dos dados e atualiza??o e exibi??o do tutorial
-            if(mapas.isEmpty()){
-                //showTutorial(0);
-            }else{
-                //aqui ele atualiza ou carrega as áreas existentes
-                //verificaAreas(true);
-                atualiza = false;
-            }
-            //SendHttpRequestTask t = new SendHttpRequestTask();
-            //String[] params = new String[]{url+urlArea, null, null};
-            //t.execute(params);
-            ehArea = true;
 
-        }
-        //aqui ele vai baixar as áreas caso seja o primeiro acesso
-        if(atualiza)
-        {
-            //verificaAreas(false);
-
-            ehArea = true;
-        }
-        msgLocais = true;
 
 
         mProgressDialog = new ProgressDialog(SendLocalActivity.this);
@@ -240,6 +239,63 @@ public class SendLocalActivity extends AppCompatActivity {
 
     ///////////////////////c?digos inseridos a partir do dia 16/09
 
+    public void loadCityPref() {
+        // Restore preferences
+        SharedPreferences cidade = getSharedPreferences(CITY_PREF, 0);
+
+        String aux = cidade.getString("CidadeEscolhida", null);
+        if (aux == null) {
+
+        } else {
+            cidadeAtual = aux;
+        }
+    }
+
+    /*Jo�o-10/09-carregar no inicio da app os mapas que tem registrado e qual a data de atualiza��o*/
+    //
+    public void loadAllCityPrefs() {
+        // Restore preferences
+        SharedPreferences versoes = getSharedPreferences(ALL_CITY_PREFS, 0);
+        Map<String, ?> infos = versoes.getAll();
+        for (Map.Entry<String, ?> entry : infos.entrySet()) {
+            if (cities.indexOf(entry.getKey()) == -1) {
+                cities.add(entry.getKey());
+                ultimosupdates.add((String) entry.getValue());
+            }
+        }
+        for (int i = 0; i < cities.size(); i++) {
+            String aux = versoes.getString(cities.get(i), ultimosupdates.get(i));
+            saveCityPrefs(cities.get(i), aux);
+
+        }
+    }
+
+    /*Jo�o-10/09-Salva a escolha de mapa do usu�rio, deve ser chamado no bot�o de salvar as configura��es*/
+    public void saveCityPref(String varPref, String valor) {
+        // We need an Editor object to make preference changes.
+        // All objects are from android.context.Context
+        SharedPreferences settings = getSharedPreferences(CITY_PREF, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(varPref, valor);
+
+        // Commit the edits!
+        editor.commit();
+    }
+
+    /*Jo�o-10/09-Salva mapas e datas de atualiza��o nas preferencias, caso seja um novo mapa � passado o nome e uma datapadr�o=26-10-1989*/
+    //N�O USADO AINDA
+    public void saveCityPrefs(String name, String valor) {
+        // We need an Editor object to make preference changes.
+        // All objects are from android.context.Context
+        SharedPreferences settings = getSharedPreferences(ALL_CITY_PREFS, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(name, valor);
+
+        // Commit the edits!
+        editor.commit();
+        int i = cities.indexOf(name);
+    }
+
 
     /* Fun??o para verificar exist?ncia de conex?o com a internet*/
     public  boolean verificaConexao() {
@@ -256,338 +312,92 @@ public class SendLocalActivity extends AppCompatActivity {
     }
 
 
-    public void showTutorial(int i)
+
+    public void escolhaCidade(View view)
     {
-        LayoutInflater factory = LayoutInflater.from(this);
-        final View view;
 
-        ImageView image;
-        ImageView image2;
+        CharSequence[] opt = cities.toArray(new CharSequence[cities.size()]);
 
-        TextView text;
-        TextView text2;
-        TextView text3;
 
-        final String title;
-        String voltar = "<< Voltar";
-        String sair = "Sair";
-        String proximo = "Próximo >>";
+        AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
+        builder2
+                .setTitle("Áreas")
+                .setIcon(R.drawable.map)
+                .setItems(opt, new DialogInterface.OnClickListener() {
 
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // TODO Auto-generated method stub
+                        //which eh o elemento selecionado
+                        String s = cities.get(which).toString();
+                        textCidade.setText(s);
+                        textCidade.setVisibility(View.VISIBLE);
+                        if (verificaConexao()) {
 
-        switch(i){
-            case 0:
-                //geração do dialog para o sobre
 
-                view = factory.inflate(R.layout.image, null);
-                image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
+                        } else
+                            Toast.makeText(getApplicationContext(), "Você esta sem conexão no momento!\n Ative a internet para baixar / atualizar as àreas", Toast.LENGTH_SHORT).show();
 
-                image.setImageResource(R.drawable.tutorial);
 
-                title = "Tutorial";
-                text.setText("Gostaria de fazer o tutorial agora?");
-
-                builder.setView(view)
-                        //.setMessage(R.string.string_array_help_newmapa)
-                        .setIcon(R.drawable.tut)
-                        .setTitle(title);
-                proximo = "Vamos lá!";
-                voltar = "Agora não";
-
-                builder.setPositiveButton(proximo, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(1);
-                    }
-                });
-                builder.setNegativeButton(voltar, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
+                        msgLocais = true;
 
                     }
                 });
 
-                break;
+        AlertDialog dialog2 = builder2.create();
+        dialog2.show();
+    }
 
-            case 1:
-                //geração do dialog para o sobre
-                view = factory.inflate(R.layout.image, null);
-                image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
+    public void escolhaCidade2(View view){
+        if(perfil.isSuperUser()) {
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
 
+            alert.setTitle("Cidades");
+            alert.setMessage("Digite uma nova cidade");
 
+// Set an EditText view to get user input
+            final EditText input = new EditText(this);
+            input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+            alert.setView(input);
 
-                image.setImageResource(R.drawable.menu);
-                //image2.setImageResource(R.drawable.up);
-                title = "Tutorial - Menu";
-                text.setText("A aplicação tem um menu com as opções a baixo:");
+            alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    String s = input.getText().toString();
+                    textCidade.setText(s);
+                    textCidade.setVisibility(View.VISIBLE);
+                    // Do something with value!
 
+                }
+            });
 
-                builder.setView(view)
-                        //.setMessage(R.string.string_array_help_newmapa)
-                        .setIcon(R.drawable.tut)
-                        .setTitle(title);
+            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    // Canceled.
+                }
+            });
 
-                builder.setPositiveButton(proximo, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(2);
-                    }
-                });
-                builder.setNegativeButton(sair, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
+            AlertDialog dialog2 = alert.create();
+            dialog2.show();
+        }else {
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
 
-                    }
-                });
-                builder.setNeutralButton(voltar, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(0);
-                    }
-                });
+            alert.setTitle("Cidades");
+            alert.setMessage("Você não possui permissão para criar nova cidade");
 
+            alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
 
-                break;
-            case 2:
-                //geração do dialog para o sobre
-                view = factory.inflate(R.layout.image, null);
-                image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
+                }
+            });
 
-
-
-                image.setImageResource(R.drawable.tut3);
-                //image2.setImageResource(R.drawable.up);
-                title = "Tutorial - Atualizar Mapa";
-                text.setText("Você deve selecionar um mapa em \"Atualizar Mapa\" para que possa utilizá-lo." +
-                        "Só assim poderá selecioná-lo na opção \"Mapas\".");
-
-                builder.setView(view)
-                        //.setMessage(R.string.string_array_help_newmapa)
-                        .setIcon(R.drawable.tut)
-                        .setTitle(title);
-
-                builder.setPositiveButton(proximo, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(3);
-                    }
-                });
-                builder.setNegativeButton(sair, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-
-                    }
-                });
-                builder.setNeutralButton(voltar, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(1);
-                    }
-                });
-
-                break;
-            case 3:
-                //geração do dialog para o sobre
-                view = factory.inflate(R.layout.dialog1, null);
-                image = (ImageView) view.findViewById(R.id.imageView);
-                image2 = (ImageView) view.findViewById(R.id.imageView2);
-
-                text= (TextView) view.findViewById(R.id.textView);
-                text2= (TextView) view.findViewById(R.id.textView2);
-                text3= (TextView) view.findViewById(R.id.textView3);
-
-
-
-                image.setImageResource(R.drawable.tut3);
-                image2.setImageResource(R.drawable.orangedot);
-
-//				text.setText("");
-                text.setText("Em \"Mapas\" você escolhe um mapa para visualizar.");
-                text2.setText("Depois no marker amarelo:");
-                text3.setText("Você escolhe um local que aparecerá no mapa do App.");
-                title = "Tutorial - Mapas";
-
-                builder.setView(view)
-                        //.setMessage(R.string.string_array_help_newmapa)
-                        .setIcon(R.drawable.tut)
-                        .setTitle(title);
-
-                builder.setPositiveButton(proximo, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(4);
-                    }
-                });
-                builder.setNegativeButton(sair, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-
-                    }
-                });
-                builder.setNeutralButton(voltar, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(2);
-                    }
-                });
-
-                break;
-            case 4:
-                //geração do dialog para o sobre
-                view = factory.inflate(R.layout.dialog1, null);
-                image = (ImageView) view.findViewById(R.id.imageView);
-                image2 = (ImageView) view.findViewById(R.id.imageView2);
-
-                text= (TextView) view.findViewById(R.id.textView);
-                text2= (TextView) view.findViewById(R.id.textView2);
-                text3= (TextView) view.findViewById(R.id.textView3);
-
-
-
-                //image.setImageResource(R.drawable.opt);
-                image.setImageResource(R.drawable.tut4);
-
-//				text.setText("");
-                text.setText("Clicando em \"Satélite / Normal\"");
-                text2.setText("Você transita entre as imagens de Satélite e a padrão.");
-                text3.setText("");
-
-                title = "Tutorial - Satelite / Normal";
-
-                builder.setView(view)
-                        //.setMessage(R.string.string_array_help_newmapa)
-                        .setIcon(R.drawable.tut)
-                        .setTitle(title);
-
-                builder.setPositiveButton(proximo, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(5);
-                    }
-                });
-                builder.setNegativeButton(sair, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-
-                    }
-                });
-                builder.setNeutralButton(voltar, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(3);
-                    }
-                });
-
-                break;
-            case 5:
-                //geração do dialog para o sobre
-                view = factory.inflate(R.layout.dialog1, null);
-                image = (ImageView) view.findViewById(R.id.imageView);
-                image2 = (ImageView) view.findViewById(R.id.imageView2);
-
-                text= (TextView) view.findViewById(R.id.textView);
-                text2= (TextView) view.findViewById(R.id.textView2);
-                text3= (TextView) view.findViewById(R.id.textView3);
-
-
-
-                image.setImageResource(R.drawable.tut5);
-                //image2.setImageResource();
-
-                text.setText("Ao clicar no marker do mapa, você terá mais infomações sobre o local. ");
-                text2.setText("Em destaque com seta e caixa vermelha aparecerá a opção de rota. ");
-                text3.setText("Clicando nele, você será redirecionado ao Google Maps App e será requisitado" +
-                        " a permissão para o uso de GPS para se construir a rota de onde você está até o local." +
-                        " A outra opção ao lado redireciona você para o Google Maps App.");
-
-
-
-                title = "Tutorial - Informações e Rota";
-
-                builder.setView(view)
-                        //.setMessage(R.string.string_array_help_newmapa)
-                        .setIcon(R.drawable.tut)
-                        .setTitle(title);
-
-                builder.setPositiveButton(proximo, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(6);
-                    }
-                });
-                builder.setNegativeButton(sair, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-
-                    }
-                });
-                builder.setNeutralButton(voltar, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(4);
-                    }
-                });
-
-                break;
-            case 6:
-                view = factory.inflate(R.layout.image, null);
-                image = (ImageView) view.findViewById(R.id.image);
-                text= (TextView) view.findViewById(R.id.textView);
-
-                image.setImageResource(R.drawable.tutorial);
-
-                title = "Tutorial";
-                text.setText("Pronto! Boa Sorte!");
-
-                builder.setView(view)
-                        //.setMessage(R.string.string_array_help_newmapa)
-                        .setIcon(R.drawable.tut)
-                        .setTitle(title);
-                proximo = "Ir para a aplicação";
-
-
-                builder.setPositiveButton(proximo, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-
-                    }
-                });
-                builder.setNegativeButton(voltar, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        // User clicked OK button
-                        showTutorial(5);
-                    }
-                });
-
-                break;
+            AlertDialog dialog2 = alert.create();
+            dialog2.show();
         }
-
-//		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-//	           public void onClick(DialogInterface dialog, int id) {
-//	               // User clicked OK button
-//
-//	           }
-//	       });
-//		builder.setNeutralButton("Voltar", new DialogInterface.OnClickListener() {
-//	           public void onClick(DialogInterface dialog, int id) {
-//	               // User clicked OK button
-//
-//	           }
-//	       });
-//		builder.setNegativeButton("sair", new DialogInterface.OnClickListener() {
-//	           public void onClick(DialogInterface dialog, int id) {
-//	               // User clicked OK button
-//
-//	           }
-//	       });
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        if(verificaConexao()){
+        }else Toast.makeText(getApplicationContext(), "Você esta sem conexão no momento!\n Ative a internet para baixar / atualizar as àreas", Toast.LENGTH_SHORT).show();
 
     }
+
     public void escolhaMapa(View view)
     {
 
@@ -624,327 +434,56 @@ public class SendLocalActivity extends AppCompatActivity {
     }
 
     public void escolhaMapa2(View view){
-        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        if(perfil.isSuperUser()) {
 
-        alert.setTitle("Áreas");
-        alert.setMessage("Digite uma nova área");
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+
+            alert.setTitle("Áreas");
+            alert.setMessage("Digite uma nova área");
 
 // Set an EditText view to get user input
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        alert.setView(input);
+            final EditText input = new EditText(this);
+            input.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+            alert.setView(input);
 
-        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                String s = input.getText().toString();
-                textArea.setText(s);
-                textArea.setVisibility(View.VISIBLE);
-                // Do something with value!
+            alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    String s = input.getText().toString();
+                    textArea.setText(s);
+                    textArea.setVisibility(View.VISIBLE);
+                    // Do something with value!
 
-            }
-        });
+                }
+            });
 
-        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                // Canceled.
-            }
-        });
+            alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    // Canceled.
+                }
+            });
 
-        AlertDialog dialog2 = alert.create();
-        dialog2.show();
+            AlertDialog dialog2 = alert.create();
+            dialog2.show();
+        }else{
+            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+
+            alert.setTitle("Áreas");
+            alert.setMessage("Você não possui permissão para criar nova área");
+
+            alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+
+                }
+            });
+
+            AlertDialog dialog2 = alert.create();
+            dialog2.show();
+        }
         if(verificaConexao()){
         }else Toast.makeText(getApplicationContext(), "Você esta sem conexão no momento!\n Ative a internet para baixar / atualizar as àreas", Toast.LENGTH_SHORT).show();
 
     }
 
-
-
-    public void verificaAreas(boolean teste)
-    {
-        if(!teste){
-            teste = verificaConexao();
-        }
-        if(teste) {
-            final DownloadTask2 dt = new DownloadTask2(SendLocalActivity.this);
-            dt.execute(url + urlArea);
-        }else Toast.makeText(this, "Você esta sem conexão no momento!", Toast.LENGTH_SHORT).show();
-    }
-
-    //inner class que efetua o download e instala os dados na aplica??o
-    public class DownloadTask2 extends AsyncTask<String, Integer, String> {
-
-        private Context context;
-        private PowerManager.WakeLock mWakeLock;
-
-
-        public DownloadTask2(Context context) {
-            this.context = context;
-        }
-
-        //salva os dados dentro da aplica??o
-        @Override
-        protected String doInBackground(String... sUrl) {
-            String s = null;
-
-            //metodo para salvar dentro do app o arquivo
-            s = INTERNALmethod(sUrl);
-
-
-            return s;
-        }
-
-        //metodo q insere os dados dentro do app
-        protected String INTERNALmethod(String... sUrl)
-        {
-            InputStream input = null;
-            OutputStream output = null;
-            HttpURLConnection connection = null;
-            try {
-                URL url = new URL(sUrl[0]);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.connect();
-
-                // expect HTTP 200 OK, so we don't mistakenly save error report
-                // instead of the file
-                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    return "Server returned HTTP " + connection.getResponseCode()
-                            + " " + connection.getResponseMessage();
-                }
-
-                // this will be useful to display download percentage
-                // might be -1: server did not report the length
-                int fileLength = connection.getContentLength();
-
-                // download the file
-                input = connection.getInputStream();
-
-                String s = context.getFilesDir().toString();
-
-                output = new FileOutputStream(context.getFilesDir()+"/Areas.xml");
-
-
-                byte data[] = new byte[4096];
-                long total = 0;
-                int count;
-                while ((count = input.read(data)) != -1) {
-                    // allow canceling with back button
-                    if (isCancelled()) {
-                        input.close();
-                        return null;
-                    }
-                    total += count;
-                    // publishing the progress....
-                    if (fileLength > 0) // only if total length is known
-                        publishProgress((int) (total * 100 / fileLength));
-                    output.write(data, 0, count);
-                }
-            } catch (Exception e) {
-                return e.toString();
-            } finally { //por fim fecha os arquivos de leitura / escrita
-                try {
-                    if (output != null)
-                        output.close();
-                    if (input != null)
-                        input.close();
-                } catch (IOException ignored) {
-                }
-
-                if (connection != null)
-                    connection.disconnect();
-            }
-            return null;
-
-        }
-        //metodo q grava no cart?o (n?o est? sendo usado
-        protected String EXTERNALmethod(String... sUrl)
-        {
-
-            InputStream input = null;
-            OutputStream output = null;
-            HttpURLConnection connection = null;
-            try {
-                URL url = new URL(sUrl[0]);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.connect();
-
-                // expect HTTP 200 OK, so we don't mistakenly save error report
-                // instead of the file
-                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                    return "Server returned HTTP " + connection.getResponseCode()
-                            + " " + connection.getResponseMessage();
-                }
-
-                // this will be useful to display download percentage
-                // might be -1: server did not report the length
-                int fileLength = connection.getContentLength();
-
-                // download the file
-                input = connection.getInputStream();
-                //String mapaescolhido = Main.getMapaEscolhido();
-
-                output = new FileOutputStream(Environment.getExternalStorageDirectory().getPath()+"/"+mapaescolhido2+".xml");
-
-                byte data[] = new byte[4096];
-                long total = 0;
-                int count;
-                while ((count = input.read(data)) != -1) {
-                    // allow canceling with back button
-                    if (isCancelled()) {
-                        input.close();
-                        return null;
-                    }
-                    total += count;
-                    // publishing the progress....
-                    if (fileLength > 0) // only if total length is known
-                        publishProgress((int) (total * 100 / fileLength));
-                    output.write(data, 0, count);
-                }
-            } catch (Exception e) {
-                return e.toString();
-            } finally {
-                try {
-                    if (output != null)
-                        output.close();
-                    if (input != null)
-                        input.close();
-                } catch (IOException ignored) {
-                }
-
-                if (connection != null)
-                    connection.disconnect();
-            }
-            return null;
-
-        }
-        //prepara??o para executa o salvamento dos arquivos na mem?ria do aparelho
-        // @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            // take CPU lock to prevent CPU from going off if the user
-            // presses the power button during download
-            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-                    getClass().getName());
-            mWakeLock.acquire();
-            //mProgressDialog.show();
-        }
-        //aqui mostra um progresso do download
-        //@Override
-        //protected void onProgressUpdate(Integer... progress) {
-        //    super.onProgressUpdate(progress);
-        // if we get here, length is known, now set indeterminate to false
-        //    mProgressDialog.setIndeterminate(false);
-        //    mProgressDialog.setMax(100);
-        //    mProgressDialog.setProgress(progress[0]);
-        //    if (progress[0] == 100) {
-        //        mProgressDialog.dismiss();
-        //    }
-        // }
-
-        //execu??o posterior ao download
-        @Override
-        protected void onPostExecute(String result) {
-            mWakeLock.release();
-//	      mProgressDialog.dismiss();
-            if (result != null){ //aviso caso tenha ocorrido um erro
-                Toast.makeText(context,"Erro de Download", Toast.LENGTH_LONG).show();
-                statusUpdate = "Checar Atualizações";
-            }
-            else{//aviso q ocorreu tudo certo
-                Toast.makeText(context,"Mapas baixados", Toast.LENGTH_SHORT).show();
-
-                //informa q est? atualizado
-
-                //statusUpdate = "Atualizado";
-                //Toast.makeText(context, statusUpdate, Toast.LENGTH_LONG).show();
-                statusUpdate = "Checar Atualizações";
-                //ultimosupdates.contains(formattedDate);
-
-            }
-            useDownload();
-        }
-
-        public void useDownload(){
-
-            File f = new File(context.getFilesDir()+ "/Areas.xml");
-
-
-            InputSource is = new InputSource(f.toURI().toString());
-            if(ehArea) {
-                areas = RssParserHelper.parseArea(is);
-
-                //caso mapas esteja vazio ele é preenchido já q será utilizado para fornecer os dados
-                if (mapas.isEmpty()) {
-                    for (Area area : areas) {
-                        mapas.add(area.getNome());
-                        ultimosupdates.add(datapadrao);
-                        savePrefs(area.getNome(), datapadrao);
-                    }
-                } else {//se n?o atualiza o q interessa
-                    for (Area area : areas) {
-                        int index = mapas.indexOf(area.getNome());
-                        if (index == -1) {
-                            mapas.add(area.getNome());
-                            ultimosupdates.add(datapadrao);
-                            savePrefs(area.getNome(), datapadrao);
-                        }
-                        String codigo = (String)area.getIdarea().toString();
-                        //ehArea=false;
-                        //SendHttpRequestTask t = new SendHttpRequestTask();//ENVIA AO SERVIDOR UMA REQUISI??O ASYNCTASK, OU SEJA, EM PARALELO PARA N?O TRAVAR A APLICA??O;
-                        //String[] params = new String[]{url+urlLocal+codigo/*+codigo da ?rea*/, null, null};
-                        //t.execute(params);
-
-                    }
-                }
-                ArrayList<String> mapasToDelete = new ArrayList<String>();
-                for (String mapa : mapas) {
-                    int index = -1;
-                    for (Area area : areas) {
-
-                        if(area.getNome().indexOf(mapa) != -1){
-                            index = 1;
-                        }
-                    }
-                    if (index == -1) {
-                        mapasToDelete.add(mapa);
-                    }
-                }
-                for (String mapa : mapasToDelete) {
-                    mapas.remove(mapa);
-                }
-                // se areas e mapas estiverem vazios significa q ? primeira vez q a aplica??o ? carregada
-                // e n?o h? comunica??o com o servidor
-                // logo deve se informar ao usu?rio q a aplica??o vai ter q ser executada mais tarde
-                if (areas.isEmpty() && mapas.isEmpty()) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(SendLocalActivity.this);
-                    builder.setMessage("Para a primeira vez que a aplicação é aberta, " +
-                            "a conexão com o servidor é necessária.\n Desculpe-nos o trantorno " +
-                            "e reabra a aplicação mais tarde")
-                            .setTitle("Servidor OFF");
-                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            // User clicked OK button
-                            finish();
-                        }
-                    });
-
-                    AlertDialog dialog = builder.create();
-                    dialog.show();
-
-                } else {
-                    ableToContinue = true;
-
-                    ///Faz o mesmo na configura??o em lista
-                    //if (mapasWasEmpty || firstClick) {
-                    Toast.makeText(getApplicationContext(), "Opções de Mapas Carregadas", Toast.LENGTH_LONG).show();
-                    //}
-                }
-            }
-            statusUpdate = "Checar Atualizações";
-            perfil.restartMapas(mapas);
-        }
-
-    }
 
     public void enviaBanco(View view){
         textArea = (TextView)findViewById(R.id.area);
@@ -965,9 +504,7 @@ public class SendLocalActivity extends AppCompatActivity {
     // / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
     /// / / / / / / / / / / / / / / / / / / / / / / / / / / / /
 
-    /**
-     * Background Async Task to Create new product
-     * */
+
     class CreateNewProduct extends AsyncTask<String, String, String> {
 
         private int success;
@@ -992,9 +529,11 @@ public class SendLocalActivity extends AppCompatActivity {
         protected String doInBackground(String... args) {
             String name = inputName.getText().toString();
             String area = textArea.getText().toString();
+            String cidade = textCidade.getText().toString();
             String link = inputDesc.getText().toString();
             String lat = SendLocalActivity.this.lat.toString();
             String lng = SendLocalActivity.this.lng.toString();
+            String email = perfil.getEmail();
 
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
@@ -1003,6 +542,9 @@ public class SendLocalActivity extends AppCompatActivity {
             params.add(new BasicNameValuePair("link", link.toString()));
             params.add(new BasicNameValuePair("latitude", lat.toString()));
             params.add(new BasicNameValuePair("longitude", lng.toString()));
+            params.add(new BasicNameValuePair("cidade", cidade.toString()));
+            params.add(new BasicNameValuePair("email", email.toString()));
+
 
             // getting JSON Object
             // Note that create product url accepts POST method

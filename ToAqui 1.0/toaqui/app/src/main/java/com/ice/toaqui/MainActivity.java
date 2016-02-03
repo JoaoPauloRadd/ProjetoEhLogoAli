@@ -166,6 +166,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static boolean first = true;
 
     private static String cidadeAtual;
+    private static Menu menuLocais;
 
 
     ////////////////////////////////////////////////////////////////////
@@ -241,7 +242,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         msgLocais = true;
 
         perfil.restartMapas(mapas);
-        //perfil.upload();
+        perfil.setMapaAtual(mapaescolhido);
+        perfil.setCidadeAtual(cidadeAtual);
+
         mProgressDialog = new ProgressDialog(MainActivity.this);
         mProgressDialog.setMessage("Carregando...");
         mProgressDialog.setIndeterminate(true);
@@ -641,6 +644,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
 
+        menuLocais = menu;
         MenuItem menu2 = menu.findItem(R.id.menu2);
         if (menu2 != null) {
             SubMenu subMenu2 = menu2.getSubMenu();
@@ -673,16 +677,56 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 msgLocais = false;
                 menu2.setEnabled(true);
                 estaCarregandoLocais = false;
-            } else if (locais.isEmpty()) menu2.setEnabled(false);
-            if (estaCarregandoLocais) {
-                if (sizeLoop < 10 && internet) {
-                    sizeLoop = sizeLoop + 1;
-                    onPrepareOptionsMenu(menu);
-                } else {
-                    Toast.makeText(this, "Verifique sua conexão\nNão foi possível carregar os locais", Toast.LENGTH_SHORT).show();
-                    sizeLoop = 0;
+            } else if (locais.isEmpty()){
+                menu2.setEnabled(false);
+                if (menu2.isChecked()) {
+                    Toast.makeText(this, "Ainda foi possível carregar os locais", Toast.LENGTH_SHORT).show();
                 }
             }
+
+        }
+        return true;
+    }
+
+    public boolean onPrepareOptionsMenu2(Menu menu) {
+
+        MenuItem menu2 = menu.findItem(R.id.menu2);
+        if (menu2 != null) {
+            SubMenu subMenu2 = menu2.getSubMenu();
+
+            File f;
+
+            //pega arquivo dentro das pastas do app
+            f = getFileINTERNAL();
+
+
+            InputSource is = new InputSource(f.toURI().toString());
+            //retira os valores dos arrays pra n�o repetir valores no menu j� adicionados antes
+            locais = null;
+            nomesLocais = null;
+
+            if (subMenu2.size() > 1) {
+                //restarta a cria��o do menu caso j� tivesse valores no submenu (evita repeti��o dos valores
+                invalidateOptionsMenu();
+            }
+            locais = RssParserHelper.parseLocal(is);
+            nomesLocais = new ArrayList<String>();
+            //preenche a lista dos locais
+            for (Local l : locais) {
+                subMenu2.add(l.getNome());
+                nomesLocais.add(l.getNome());
+            }
+            boolean internet = verificaConexao();
+            if (!(locais.isEmpty()) && msgLocais) {
+                Toast.makeText(this, "Locais carregados", Toast.LENGTH_SHORT).show();
+                msgLocais = false;
+                menu2.setEnabled(true);
+                estaCarregandoLocais = false;
+            } else if (locais.isEmpty()){
+                menu2.setEnabled(false);
+                Toast.makeText(this, "Verifique sua conexão\nNão foi possível carregar os locais", Toast.LENGTH_SHORT).show();
+            }
+
         }
         return true;
     }
@@ -799,13 +843,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     if(i>=0) {
                         Local local = locais.get(i);
                         plotaNoMap(local);
+                        perfil.setMapaAtual(mapaescolhido);
                     }
                     subItemMenu = false;
                 }
                 else{
                     String nomeMapa = (String) item.getTitle();
                     selfDestruct2(nomeMapa);
-                    //selfDestruct2
+                    perfil.setMapaAtual(mapaescolhido);
+
                 }
 
 
@@ -911,11 +957,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         // TODO Auto-generated method stub
                         //which eh o elemento selecionado
                         cidadeAtual = cities.get(which).toString();
+                        perfil.setCidadeAtual(cidadeAtual);
                         saveCityPref("CidadeEscolhida", cidadeAtual);
                         mapasDaCidade.clear();
                         for (Area area : areas) {
                             if (area.getCidade().equals(cidadeAtual))
                                 mapasDaCidade.add(area.getNome());
+
                         }
                         escolhaArea();
                     }
@@ -942,7 +990,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Toast.makeText(this, "Nenhuma opção selecionada!\nEspere a aplicação carregar.", Toast.LENGTH_SHORT).show();
                 } else {
                     //registra e guarda o q est� sendo atualizado
-                    nome = selecionado;
+                    perfil.setMapaAtual(selecionado);
                     mapaescolhido2 = selecionado;
                     Log.v("nome do mapa", selecionado);
                     int aux = posicao;
@@ -1105,6 +1153,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             @Override
             public boolean onMyLocationButtonClick() {
+
                 final LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
                 if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     buildAlertMessageNoGps();
@@ -1616,6 +1665,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         private Context context;
         private PowerManager.WakeLock mWakeLock;
 
+
         public DownloadTask(Context context) {
             this.context = context;
         }
@@ -1769,6 +1819,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         //aqui mostra um progresso do download
+
         @Override
         protected void onProgressUpdate(Integer... progress) {
             super.onProgressUpdate(progress);
@@ -1780,6 +1831,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mProgressDialog.dismiss();
             }
         }
+        //http://stackoverflow.com/questions/19655715/progress-dialog-is-closed-when-touch-on-screen
 
         //execu��o posterior ao download
         @Override
@@ -1807,7 +1859,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 statusUpdate = "Atualizado";
                 //Toast.makeText(context, statusUpdate, Toast.LENGTH_LONG).show();
                 statusUpdate = "Checar Atualizações";
-
+                onPrepareOptionsMenu2(menuLocais);
             }
         }
 
@@ -2045,31 +2097,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
 
-/*
-                Cidade cidade = new Cidade();
-                cidade.setAreas(areas);
-                cidade.setIdCidade(0);
-                cidade.setResponsavel("Barrere");
-                cidade.setNome("Juiz de Fora/MG");
-                cidades.add(cidade);
-                cidade = new Cidade();
-                Area a = new Area();
-                List<Area> ar = new ArrayList<Area>();
-                cidade.setAreas(ar);
-                cidade.setIdCidade(1);
-                cidade.setResponsavel("Barrere");
-                cidade.setNome("Belo Horizonte/MG");
-                cidades.add(cidade);
 
-                for(Cidade cid: cidades){
-                    if(!cities.contains(cid.getNome())){
-                        cities.add(cid.getNome());
-                        saveCityPrefs(cid.getNome(), datapadrao);
-                    }
-                }*/
-
-
-                ////FIM TREXO ADAPTADO PARA TESTE
 
                 //caso mapas esteja vazio ele é preenchido já q será utilizado para fornecer os dados
                 if (mapas.isEmpty()) {
@@ -2132,17 +2160,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 } else {
                     ableToContinue = true;
 
-                    ///Faz o mesmo na configura��o em lista
-                    //if (mapasWasEmpty || firstClick) {
+
                     Toast.makeText(getApplicationContext(), "Opções de Mapas Carregadas", Toast.LENGTH_LONG).show();
-                    //}
+
                 }
             }
             statusUpdate = "Checar Atualizações";
             perfil.restartMapas(mapas);
 
         }
-
-
     }
 }

@@ -179,6 +179,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static String cidadeAtual;
 
+    private static Menu menuLocais;
+
     ////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
@@ -639,15 +641,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return true;
     }
 
-    @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
 
-        //MenuItem menu3 = menu.findItem(R.id.menu3);
-        //menu3.setTitleCondensed();
-
-
+        menuLocais = menu;
         MenuItem menu2 = menu.findItem(R.id.menu2);
-        if(menu2 != null) {
+        if (menu2 != null) {
             SubMenu subMenu2 = menu2.getSubMenu();
 
             File f;
@@ -673,22 +671,62 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 nomesLocais.add(l.getNome());
             }
             boolean internet = verificaConexao();
-            if(!(locais.isEmpty()) && msgLocais)
-            {
-                Toast.makeText(this,"Locais carregados", Toast.LENGTH_SHORT).show();
+            if (!(locais.isEmpty()) && msgLocais) {
+                Toast.makeText(this, "Locais carregados", Toast.LENGTH_SHORT).show();
                 msgLocais = false;
                 menu2.setEnabled(true);
-                estaCarregandoLocais=false;
-            }else if(locais.isEmpty()) menu2.setEnabled(false);
-            if(estaCarregandoLocais) {
-                if (sizeLoop < 10 && internet) {
-                    sizeLoop = sizeLoop + 1;
-                    onPrepareOptionsMenu(menu);
-                } else {
-                    Toast.makeText(this, "Verifique sua conexão\nNão foi possível carregar os locais", Toast.LENGTH_SHORT).show();
-                    sizeLoop = 0;
+                estaCarregandoLocais = false;
+            } else if (locais.isEmpty()){
+                menu2.setEnabled(false);
+                if (menu2.isChecked()) {
+                    Toast.makeText(this, "Ainda foi possível carregar os locais", Toast.LENGTH_LONG).show();
                 }
             }
+
+        }
+        return true;
+    }
+
+    public boolean onPrepareOptionsMenu2(Menu menu) {
+
+        MenuItem menu2 = menu.findItem(R.id.menu2);
+        if (menu2 != null) {
+            SubMenu subMenu2 = menu2.getSubMenu();
+
+            File f;
+
+            //pega arquivo dentro das pastas do app
+            f = getFileINTERNAL();
+
+
+            InputSource is = new InputSource(f.toURI().toString());
+            //retira os valores dos arrays pra n�o repetir valores no menu j� adicionados antes
+            locais = null;
+            nomesLocais = null;
+
+            if (subMenu2.size() > 1) {
+                //restarta a cria��o do menu caso j� tivesse valores no submenu (evita repeti��o dos valores
+                invalidateOptionsMenu();
+            }
+            locais = RssParserHelper.parseLocal(is);
+            nomesLocais = new ArrayList<String>();
+            //preenche a lista dos locais
+            for (Local l : locais) {
+                subMenu2.add(l.getNome());
+                nomesLocais.add(l.getNome());
+            }
+            boolean internet = verificaConexao();
+            if (!(locais.isEmpty()) && msgLocais) {
+                Toast.makeText(this, "Locais carregados", Toast.LENGTH_SHORT).show();
+                msgLocais = false;
+                menu2.setEnabled(true);
+                estaCarregandoLocais = false;
+            } else if (locais.isEmpty()){
+                menu2.setEnabled(false);
+                Toast.makeText(this, "Verifique sua conexão\nNão foi possível carregar os locais", Toast.LENGTH_LONG).show();
+
+            }
+
         }
         return true;
     }
@@ -1749,7 +1787,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 statusUpdate = "Atualizado";
                 //Toast.makeText(context, statusUpdate, Toast.LENGTH_LONG).show();
                 statusUpdate = "Checar Atualizações";
-
+                onPrepareOptionsMenu2(menuLocais);
             }
         }
 
@@ -1963,11 +2001,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 //cidades = new ArrayList<Cidade>();
 
 
-                for (Area a:areas){
-                    if(!cities.contains(a.getCidade())){
+                for (Area a:areas) {
+                    if (!cities.contains(a.getCidade())) {
                         cities.add(a.getCidade());
                         saveCityPrefs(a.getCidade(), datapadrao);
                     }
+
+                }
+                ArrayList<String> cidadesToDelete = new ArrayList<String>();
+                for (String cidade : cities) {
+                    int index = -1;
+                    for (Area area : areas) {
+
+                        if(area.getCidade().indexOf(cidade) != -1){
+                            index = 1;
+                        }
+                    }
+                    if (index == -1) {
+                        cidadesToDelete.add(cidade);
+                    }
+                }
+                for (String cidade : cidadesToDelete) {
+                    cities.remove(cidade);
                 }
 
 

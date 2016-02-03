@@ -5,7 +5,7 @@ package com.ice.toaqui.pojo;
  */
 public class Usuarios {
     private String email;
-
+    private int superUser;
 
     public Usuarios() {
     }
@@ -14,6 +14,10 @@ public class Usuarios {
         this.email = email;
     }
 
+    public Usuarios(String email, int superUser) {
+        this.email = email;
+        this.superUser = superUser;
+    }
 
     public String getEmail() {
         return email;
@@ -22,6 +26,17 @@ public class Usuarios {
     public void setemail(String nome) {
         this.email = nome;
     }
+
+    public boolean isSuperUser()
+    {
+        if(superUser == 1)return true;
+        else return false ;
+    }
+
+    public void setSuperUser(int superUser) {
+        this.superUser = superUser;
+    }
+
     /*
     @Override
     public int hashCode() {
