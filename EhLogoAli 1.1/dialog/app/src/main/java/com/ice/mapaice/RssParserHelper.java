@@ -83,7 +83,11 @@ public class RssParserHelper {
         String EXPR_IDAREA = "idarea";
         String EXPR_NOME = "nome";
         String EXPR_RESPONSAVEL = "responsavel";
+        String EXPR_LAT = "latitudeare";
+        String EXPR_LONG = "longitudearea";
         String EXPR_CIDADE = "cidade";
+        String EXPR_LATCID = "latitudecidade";
+        String EXPR_LONGCID = "longitudecidade";
 
         try {
             XPath xpath = XPathFactory.newInstance().newXPath();
@@ -96,9 +100,15 @@ public class RssParserHelper {
                 Node idareaNode    = (Node) xpath.evaluate(EXPR_IDAREA, item, XPathConstants.NODE);
                 Node nomeNode    = (Node) xpath.evaluate(EXPR_NOME, item, XPathConstants.NODE);
                 Node responsavelNode    = (Node) xpath.evaluate(EXPR_RESPONSAVEL, item, XPathConstants.NODE);
+                Node latNode    = (Node) xpath.evaluate(EXPR_LAT, item, XPathConstants.NODE);
+                Node longNode    = (Node) xpath.evaluate(EXPR_LONG, item, XPathConstants.NODE);
                 Node cidadeNode    = (Node) xpath.evaluate(EXPR_CIDADE, item, XPathConstants.NODE);
+                Node latCidadeNode    = (Node) xpath.evaluate(EXPR_LATCID, item, XPathConstants.NODE);
+                Node longCidadeNode    = (Node) xpath.evaluate(EXPR_LONGCID, item, XPathConstants.NODE);
 
-                Area area = new Area(Integer.valueOf(idareaNode.getTextContent()), nomeNode.getTextContent(), responsavelNode.getTextContent(), cidadeNode.getTextContent());
+                Area area = new Area(Integer.valueOf(idareaNode.getTextContent()), nomeNode.getTextContent(),
+                        responsavelNode.getTextContent(), cidadeNode.getTextContent(), latNode.getTextContent(),
+                        longNode.getTextContent(), latCidadeNode.getTextContent(), longCidadeNode.getTextContent());
                 areas.add(area);
                 index++;
             }

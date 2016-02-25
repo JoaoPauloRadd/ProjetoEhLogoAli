@@ -14,9 +14,9 @@ public class Usuarios {
         this.email = email;
     }
 
-    public Usuarios(String email, int superUser) {
+    public Usuarios(String email, String superUser) {
         this.email = email;
-        this.superUser = superUser;
+        this.superUser = Integer.parseInt(superUser);
     }
 
     public String getEmail() {

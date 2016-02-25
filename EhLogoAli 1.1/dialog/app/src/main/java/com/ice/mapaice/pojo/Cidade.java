@@ -12,6 +12,8 @@ public class Cidade {
     private String nome;
     private String responsavel;
     private List<Area> areas;
+    private String latitude;
+    private String longitude;
 
     public Cidade() {
     }
@@ -46,6 +48,15 @@ public class Cidade {
         this.areas = areas;
     }
 
+    public Cidade(Integer idCidade, String nome, String latitude, String longitude, List<Area> areas) {
+        this.idCidade = idCidade;
+        this.nome = nome;
+        this.responsavel = null;
+        this.areas = areas;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
     public Integer getIdCidade() {
         return idCidade;
     }
@@ -68,6 +79,22 @@ public class Cidade {
 
     public void setResponsavel(String responsavel) {
         this.responsavel = responsavel;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
     }
 
     @Override

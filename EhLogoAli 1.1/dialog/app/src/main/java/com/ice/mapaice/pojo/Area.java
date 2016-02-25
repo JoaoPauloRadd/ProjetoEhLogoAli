@@ -13,6 +13,10 @@ public class Area{
     private String nome;
     private String responsavel;
     private String cidade;
+    private String latitude;
+    private String longitude;
+    private String latitudeCid;
+    private String longitudeCid;
 
     public Area() {
     }
@@ -26,6 +30,17 @@ public class Area{
         this.nome = nome;
         this.responsavel = responsavel;
         this.cidade = cidade;
+    }
+
+    public Area(Integer idarea, String nome, String responsavel, String cidade, String latitude, String longitude, String latitudeCid, String longitudeCid) {
+        this.idarea = idarea;
+        this.nome = nome;
+        this.responsavel = responsavel;
+        this.cidade = cidade;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.latitudeCid = latitudeCid;
+        this.longitudeCid = longitudeCid;
     }
 
     public Integer getIdarea() {
@@ -58,6 +73,38 @@ public class Area{
 
     public void setCidade(String cidade) {
         this.cidade = cidade;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getLatitudeCid() {
+        return latitudeCid;
+    }
+
+    public void setLatitudeCid(String latitudeCid) {
+        this.latitudeCid = latitudeCid;
+    }
+
+    public String getLongitudeCid() {
+        return longitudeCid;
+    }
+
+    public void setLongitudeCid(String longitudeCid) {
+        this.longitudeCid = longitudeCid;
     }
 
     @Override

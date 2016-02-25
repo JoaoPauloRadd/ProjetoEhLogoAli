@@ -75,7 +75,7 @@ import java.util.Calendar;
 import java.util.List;
 
 import java.util.Map;
-
+import java.util.ResourceBundle;
 
 
 import org.apache.http.HttpResponse;
@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     //URL REPRESENTA O CAMINHO DO SERVIDOR, � AQUI QUE O ip SER� ALTERADO QUANDO O SERVIDOR LOCAL ESTIVER FUNCIONANDO
     private static String url = "http://ehlogoali.eduardobarrere.com/consulta/";
-    private static String urlArea = "xml.php";
+    private static String urlArea = "xml7.php?go=";
     private static String urlLocal = "xml3.php?go=";
     //ESTA � A DATA PADR�O QUE � ATRIBUIDA A UM MAPA CASO ELE AINDA N�O TENHA SIDO CHECADO NO SERVIDOR POR ATUALIZA��ES
     String datapadrao = "26-10-1989";
@@ -258,7 +258,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
         if (teste) {
             final DownloadTask2 dt = new DownloadTask2(MainActivity.this);
-            dt.execute(url + urlArea);
+            String param;
+            if(perfil.isSuperUser()){
+                param = "1";
+            }else param = perfil.getEmail();
+            dt.execute(url + urlArea + param);
         } else Toast.makeText(this, "Você esta sem conexão no momento!", Toast.LENGTH_SHORT).show();
     }
 
@@ -895,8 +899,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
         if (!mapasDaCidade.isEmpty()) {
-            CharSequence[] opt = mapasDaCidade.toArray(new CharSequence[mapas.size()]);
-
+            CharSequence[] opt = mapasDaCidade.toArray(new CharSequence[mapasDaCidade.size()]);
 
             AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
             builder2

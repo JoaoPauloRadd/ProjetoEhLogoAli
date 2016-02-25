@@ -115,6 +115,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static GoogleMap map;
     //zoom m�nimo do mapa
     private final int MIN_ZOOM = 18;
+    private final int MED_ZOOM = 12;
+    private final int MAX_ZOOM = 3;
+    private static boolean cidLoc = true;
 
     private static int TYPE_MAP = GoogleMap.MAP_TYPE_NORMAL;
     private static View infoWindow;
@@ -170,11 +173,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     //URL REPRESENTA O CAMINHO DO SERVIDOR, � AQUI QUE O ip SER� ALTERADO QUANDO O SERVIDOR LOCAL ESTIVER FUNCIONANDO
     private static String url = "http://ehlogoali.eduardobarrere.com/consulta/";
     private static String localHost = "http://200.131.55.228/elogoali/api/";
-    private static String urlArea = "xml.php";
+    private static String urlArea = "xml7.php";
     private static String urlLocal = "xml3.php?go=";
     //ESTA � A DATA PADR�O QUE � ATRIBUIDA A UM MAPA CASO ELE AINDA N�O TENHA SIDO CHECADO NO SERVIDOR POR ATUALIZA��ES
     String datapadrao = "26-10-1989";
-    private static String linkMarker = "http://www.ufjf.br/portal/";
+    private static String linkMarker = "http://www.brasil.gov.br/";
     private static int sizeLoop = 0;
 
     private static String cidadeAtual;
@@ -203,6 +206,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         locais = new ArrayList<Local>();
         nomesLocais = new ArrayList<String>();
         mapasDaCidade = new ArrayList<String>();
+        cidadeAtual = "";
 
         //Carrega e salva preferencias
         loadAllPrefs();
@@ -837,6 +841,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     int i = nomesLocais.indexOf(item.getTitle());
                     if(i>=0) {
                         Local local = locais.get(i);
+                        cidLoc = false;
                         plotaNoMap(local);
                     }
                     subItemMenu = false;
@@ -873,7 +878,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public void escolhaMapa()
     {
-        if(cidadeAtual==null) {
+        if(cidadeAtual==null || cidadeAtual.equals("")) {
             descobrirCidade();
         }else {
             escolhaArea();
@@ -888,9 +893,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
         if(!mapasDaCidade.isEmpty()) {
-            CharSequence[] opt = mapasDaCidade.toArray(new CharSequence[mapas.size()]);
+            CharSequence[] opt = mapasDaCidade.toArray(new CharSequence[mapasDaCidade.size()]);
 
-
+            final Local local = new Local();
             AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
             builder2
                     .setTitle("Mapas")
@@ -902,7 +907,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             // TODO Auto-generated method stub
                             //which eh o elemento selecionado
                             String s = mapasDaCidade.get(which).toString();
+                            for (Area area : areas) {
+                                if (area.getNome().equals(s)) {
+                                    local.setLatitude(area.getLatitude());
+                                    local.setLongitude(area.getLongitude());
+                                    local.setNome(area.getNome());
+                                }
+                            }
                             if (verificaConexao()) {
+                                cidLoc = false;
+                                plotaNoMap(local);
                                 selfUpdate2(s, which);
                             } else
                                 Toast.makeText(getApplicationContext(), "Você esta sem conexão no momento!\n Ative a internet para baixar / atualizar locais", Toast.LENGTH_SHORT).show();
@@ -938,6 +952,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         alert.setTitle("Cidade de interesse");
         alert.setMessage("Escolha sua cidade:");
 
+        final Local local = new Local();
+
         CharSequence[] opt = cities.toArray(new CharSequence[cities.size()]);
         AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
         builder2
@@ -955,7 +971,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         for (Area area : areas) {
                             if (area.getCidade().equals(cidadeAtual))
                                 mapasDaCidade.add(area.getNome());
+                                local.setLatitude(area.getLatitudeCid());
+                                local.setLongitude(area.getLongitudeCid());
+                                local.setNome(area.getCidade());
                         }
+                        cidLoc = true;
+                        plotaNoMap(local);
                         escolhaArea();
                     }
                 });
@@ -1095,18 +1116,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map = googleMap;
         map.setMapType(TYPE_MAP);
         //plotagem da UFJF - aqui ele posiciona a visualiza��o  no ponto
-        LatLng latLong = new LatLng(-21.773459, -43.369259);
+        LatLng latLong = new LatLng(-14.235004, -51.92528);
         CameraPosition position = new CameraPosition.Builder()
                 .target(latLong)
                 .bearing(0)
                 .tilt(45)
-                .zoom(MIN_ZOOM)
+                .zoom(MAX_ZOOM)
                 .build();
 
         //plota o marker
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(latLong);
-        markerOptions.title("UFJF");
+        markerOptions.title("Brasil");
 
         //markerOptions.snippet();
 
@@ -1182,10 +1203,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             }
         });
+        int zoom;
+        if(cidLoc){
+            zoom = MED_ZOOM;
+        }else zoom = MIN_ZOOM;
 
-        CameraUpdate update1 = CameraUpdateFactory.newLatLngZoom(latLong1, 18);
+        CameraUpdate update1 = CameraUpdateFactory.newLatLngZoom(latLong1, zoom);
         map.moveCamera(update1);
     }
+
 
     public void selfDestruct2(String selecionado)
     {
@@ -2006,8 +2032,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         cities.add(a.getCidade());
                         saveCityPrefs(a.getCidade(), datapadrao);
                     }
-
+                    if (cidadeAtual.equals(a.getCidade())){
+                        Local local = new Local();
+                        local.setNome(a.getCidade());
+                        local.setLatitude(a.getLatitudeCid());
+                        local.setLongitude(a.getLongitudeCid());
+                        cidLoc = true;
+                        plotaNoMap(local);
+                    }
                 }
+
                 ArrayList<String> cidadesToDelete = new ArrayList<String>();
                 for (String cidade : cities) {
                     int index = -1;
@@ -2160,7 +2194,4 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
     }
-
-
-
 }
